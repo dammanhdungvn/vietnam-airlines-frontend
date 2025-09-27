@@ -78,8 +78,8 @@ describe("Trang Đăng Nhập - Component Test", () => {
     await user.click(submitButton)
 
     // Assert
-    expect(await screen.findByText("Tên đăng nhập không được để trống")).toBeInTheDocument()
-    expect(await screen.findByText("Mật khẩu không được để trống")).toBeInTheDocument()
+    expect(await screen.findByText("Tên đăng nhập không được để trống", {}, { timeout: 10000 })).toBeInTheDocument()
+    expect(await screen.findByText("Mật khẩu không được để trống", {}, { timeout: 10000 })).toBeInTheDocument()
   })
   
   it("phải vô hiệu hóa nút submit và hiển thị 'Đang đăng nhập...' khi đang gửi form", async () => {

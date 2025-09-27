@@ -1,7 +1,11 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsChart } from "@/components/stats-chart"
+import { useToast } from "@/hooks/use-toast"
+import { getStatistics } from "@/services/statistics.service"
+import { IStatisticsData } from "@/types/statistics.type"
 import {
   Users,
   Plane,
@@ -12,59 +16,113 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
+  Loader2,
 } from "lucide-react"
 
 /**
- * Trang dashboard chính - hiển thị thống kê tổng quan hệ thống
+ * @fileoverview Trang dashboard chính - hiển thị thống kê tổng quan hệ thống.
+ * Tích hợp API thống kê để hiển thị dữ liệu thời gian thực.
+ * @version 1.0.0
+ * @since 2025-09-27
+ * @author Dũng Đàm
+ */
+
+/**
+ * Helper function để format số thành định dạng tiền tệ Việt Nam.
+ * @param {number} amount - Số tiền cần format
+ * @returns {string} - Chuỗi đã được format (ví dụ: "1.000.000đ")
+ */
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('vi-VN').format(amount) + 'đ'
+}
+
+/**
+ * Component trang Dashboard chính.
+ * Hiển thị thống kê khách hàng, doanh thu và các thao tác nhanh.
  */
 export default function DashboardPage() {
-  const customerStats = [
+  // State quản lý dữ liệu thống kê và trạng thái loading
+  const [statisticsData, setStatisticsData] = useState<IStatisticsData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
+
+  /**
+   * Hàm tải dữ liệu thống kê từ API.
+   * Xử lý trạng thái loading và error.
+   */
+  const fetchStatistics = async () => {
+    try {
+      setIsLoading(true)
+      const response = await getStatistics()
+      
+      if (response.code === 200 && response.data) {
+        setStatisticsData(response.data)
+      } else {
+        toast({
+          title: "Lỗi",
+          description: response.message || "Không thể tải dữ liệu thống kê",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || "Đã có lỗi xảy ra khi tải dữ liệu thống kê",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Tải dữ liệu khi component được mount
+  useEffect(() => {
+    fetchStatistics()
+  }, [])
+
+  // Tạo dữ liệu cho các thẻ thống kê khách hàng từ API
+  const customerStats = statisticsData ? [
     {
       title: "Tổng số khách đã up lên hệ thống",
-      value: "300",
+      value: statisticsData.totalCustomers.toString(),
       icon: Users,
       color: "text-blue-600",
     },
     {
-      title: "Tổng số khách đã đăng ký tham gia hội nghị",
-      value: "125",
+      title: "Tổng số khách đã đăng ký tham gia hội nghị", 
+      value: statisticsData.registeredCustomers.toString(),
       icon: Users,
       color: "text-green-600",
     },
     {
       title: "Tổng số khách đã đăng ký mua ghế",
-      value: "100",
+      value: statisticsData.seatBookedCustomers.toString(),
       icon: Plane,
       color: "text-orange-600",
     },
-  ]
+  ] : []
 
-  const revenueStats = [
+  // Tạo dữ liệu cho các thẻ thống kê doanh thu từ API
+  const revenueStats = statisticsData ? [
     {
       title: "Tiền bán ghế",
-      value: "5.000.000đ",
-      change: "+7.2%",
-      changeType: "positive",
+      value: formatCurrency(statisticsData.revenue.seatRevenue),
       icon: Plane,
       color: "text-blue-600",
     },
     {
-      title: "Tiền bán đồ ăn",
-      value: "5.000.000đ",
-      change: "-0.2%",
-      changeType: "negative",
+      title: "Tiền bán đồ ăn", 
+      value: formatCurrency(statisticsData.revenue.foodRevenue),
       icon: UtensilsCrossed,
       color: "text-orange-600",
     },
     {
       title: "Tổng tiền",
-      value: "10.000.000đ",
-      change: "+10.8%",
-      changeType: "positive",
+      value: formatCurrency(statisticsData.revenue.totalRevenue),
       icon: DollarSign,
       color: "text-green-600",
     },
-  ]
+  ] : []
 
   return (
     <div className="space-y-6">
@@ -76,19 +134,37 @@ export default function DashboardPage() {
 
       {/* Customer Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {customerStats.map((stat, index) => {
-          const Icon = stat.icon
-          return (
+        {isLoading ? (
+          // Hiển thị skeleton loading cho 3 cards
+          Array.from({ length: 3 }).map((_, index) => (
             <Card key={index}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stat.value}</div>
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
               </CardContent>
             </Card>
-          )
-        })}
+          ))
+        ) : (
+          customerStats.map((stat, index) => {
+            const Icon = stat.icon
+            return (
+              <Card key={index}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stat.value}</div>
+                </CardContent>
+              </Card>
+            )
+          })
+        )}
       </div>
 
       {/* Revenue Section */}
@@ -97,28 +173,37 @@ export default function DashboardPage() {
         <p className="text-gray-600 mb-4">Thống qua việc bán ghế và bán đồ ăn</p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {revenueStats.map((stat, index) => {
-            const Icon = stat.icon
-            const TrendIcon = stat.changeType === "positive" ? TrendingUp : TrendingDown
-            return (
+          {isLoading ? (
+            // Hiển thị skeleton loading cho 3 cards doanh thu
+            Array.from({ length: 3 }).map((_, index) => (
               <Card key={index}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold mb-1">{stat.value}</div>
-                  <div
-                    className={`flex items-center text-sm ${
-                      stat.changeType === "positive" ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    <TrendIcon className="h-4 w-4 mr-1" />
-                    {stat.change}
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                   </div>
                 </CardContent>
               </Card>
-            )
-          })}
+            ))
+          ) : (
+            revenueStats.map((stat, index) => {
+              const Icon = stat.icon
+              return (
+                <Card key={index}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold mb-1">{stat.value}</div>
+                  </CardContent>
+                </Card>
+              )
+            })
+          )}
         </div>
       </div>
 

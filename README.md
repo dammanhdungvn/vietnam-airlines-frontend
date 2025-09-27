@@ -447,4 +447,14 @@ npm test
 
 This will execute all test files located in the `__tests__` directory using Jest.
 
+### Test Coverage
+
+The project includes comprehensive unit tests for:
+
+- **Login functionality**: Component, service, and context tests
+- **Dashboard functionality**: Component and statistics service tests
+- **Authentication flow**: Complete user authentication workflow tests
+
+All tests follow industry best practices with proper mocking and isolation.
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
