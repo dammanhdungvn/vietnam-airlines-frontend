@@ -17,7 +17,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useAuth } from "@/context/AuthContext"
 
 /**
  * Component Sidebar - Thanh điều hướng chính của ứng dụng
@@ -42,6 +43,7 @@ export function Sidebar() {
   const router = useRouter()
   const [isAdminExpanded, setIsAdminExpanded] = useState(true)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const { user, logout } = useAuth()
 
   const adminMenuItems = [
     {
@@ -76,7 +78,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 shadow-sm">
+    <aside className="fixed top-0 left-0 h-full w-64 bg-white border-r shadow-sm z-50">
       {/* Logo Vietnam Airlines */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
@@ -177,30 +179,19 @@ export function Sidebar() {
               </div>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-              <AlertDialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Đăng xuất
-                </DropdownMenuItem>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Xác nhận đăng xuất</AlertDialogTitle>
-                  <AlertDialogDescription>Bạn có chắc chắn muốn đăng xuất khỏi hệ thống không?</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Hủy</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700">
-                    Đăng xuất
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem>
+              <User className="w-4 h-4 mr-2" />
+              {user?.username || "Tài khoản"}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={logout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Đăng xuất
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
+    </aside>
   )
 }

@@ -422,3 +422,29 @@ từ Vietnam Airlines đều bị nghiêm cấm.
 ---
 
 *Tài liệu này được cập nhật thường xuyên. Vui lòng kiểm tra phiên bản mới nhất trên repository.*
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+## Running Tests
+
+To run the unit tests for the project, use the following command:
+
+```bash
+npm test
+```
+
+This will execute all test files located in the `__tests__` directory using Jest.
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
