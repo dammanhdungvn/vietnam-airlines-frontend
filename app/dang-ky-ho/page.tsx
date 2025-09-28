@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,9 @@ import { SeatMap } from "@/components/seat-map"
 import { FoodComboModal } from "@/components/food-combo-modal"
 import { SuccessModal } from "@/components/success-modal"
 import { User, Info, Plane, Utensils, Minus, Plus } from "lucide-react"
+import { GetPersonsParams, getPersonsPaginated } from "@/services/person.service"
+import { PaginatedApiResponse, Person } from "@/types/person.type"
+import { toast } from "@/hooks/use-toast"
 
 interface FoodCombo {
   id: number
@@ -31,7 +34,7 @@ interface FoodCombo {
  */
 export default function DangKyHoPage() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<Person | null>(null)
   const [customerInfo, setCustomerInfo] = useState({
     name: "NGUYEN VAN A",
     email: "nguyenvana@email.com",
@@ -42,6 +45,9 @@ export default function DangKyHoPage() {
   const [selectedCombo, setSelectedCombo] = useState<FoodCombo | null>(null)
   const [showComboModal, setShowComboModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [personsResponse, setPersonsResponse] = useState<PaginatedApiResponse<Person> | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
   const [combos, setCombos] = useState<FoodCombo[]>([
     {
       id: 1,
@@ -91,6 +97,30 @@ export default function DangKyHoPage() {
     },
   ])
 
+  // Hàm tải danh sách khách hàng
+  const fetchPersons = async (params: GetPersonsParams = {}) => {
+    setIsLoading(true)
+    try {
+      const data = await getPersonsPaginated(params)
+      setPersonsResponse(data)
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách khách hàng. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Tải dữ liệu lần đầu
+  useEffect(() => {
+    if (currentStep === 1) {
+      fetchPersons()
+    }
+  }, [currentStep])
+
   // Các bước trong quy trình đăng ký
   const steps = [
     { number: 1, title: "Khách hàng", subtitle: "Chọn từ danh sách", icon: User },
@@ -101,6 +131,13 @@ export default function DangKyHoPage() {
 
   const handleNext = () => {
     if (currentStep < 4) {
+      // Nếu đang ở bước 1, cập nhật thông tin khách hàng được chọn cho bước 2
+      if (currentStep === 1 && selectedCustomer) {
+        setCustomerInfo({
+          name: selectedCustomer.fullName,
+          email: selectedCustomer.email,
+        })
+      }
       setCurrentStep(currentStep + 1)
     } else {
       // Hiển thị modal thành công khi hoàn thành
@@ -151,7 +188,15 @@ export default function DangKyHoPage() {
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return <CustomerList onSelect={setSelectedCustomer} />
+        return (
+          <CustomerList
+            data={personsResponse}
+            isLoading={isLoading}
+            onSelect={setSelectedCustomer}
+            selectedCustomer={selectedCustomer}
+            onPageChange={(page) => fetchPersons({ page })}
+          />
+        )
       case 2:
         return (
           <div className="max-w-2xl mx-auto space-y-6">

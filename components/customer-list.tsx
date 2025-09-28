@@ -6,51 +6,55 @@ import { useState, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
-
-interface Customer {
-  id: string
-  name: string
-  position: string
-  avatar: string
-}
+import { PaginatedApiResponse, Person } from "@/types/person.type"
+import { Button } from "./ui/button"
+import { Skeleton } from "./ui/skeleton"
 
 interface CustomerListProps {
-  onSelect: (customer: Customer) => void
+  data: PaginatedApiResponse<Person> | null
+  isLoading: boolean
+  selectedCustomer: Person | null
+  onSelect: (customer: Person) => void
+  onPageChange: (page: number) => void
 }
 
 /**
  * Component danh sách khách hàng
- * Hiển thị danh sách khách hàng có thể chọn để đăng ký
+ * Hiển thị danh sách khách hàng từ API, có phân trang, tìm kiếm và trạng thái loading.
  */
-export function CustomerList({ onSelect }: CustomerListProps) {
+export function CustomerList({ data, isLoading, selectedCustomer, onSelect, onPageChange }: CustomerListProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
-
-  // Dữ liệu mẫu khách hàng
-  const customers: Customer[] = [
-    { id: "1", name: "Đàm Mạnh Dũng", position: "Giám đốc chi nhánh", avatar: "/business-man-avatar.png" },
-    { id: "2", name: "Nguyễn Văn An", position: "Phó giám đốc", avatar: "/business-woman-avatar.png" },
-    { id: "3", name: "Trần Thị Mai", position: "Trưởng phòng", avatar: "/business-man-avatar.png" },
-    { id: "4", name: "Lê Hoàng Minh", position: "Chuyên viên", avatar: "/business-woman-avatar.png" },
-    { id: "5", name: "Phạm Thị Dung", position: "Kế toán trưởng", avatar: "/business-man-avatar.png" },
-    { id: "6", name: "Vũ Đức Mạnh", position: "Nhân viên kinh doanh", avatar: "/business-woman-avatar.png" },
-    { id: "7", name: "Hoàng Thị Diệu", position: "Thư ký", avatar: "/business-man-avatar.png" },
-    { id: "8", name: "Bùi Văn Dương", position: "Tài xế", avatar: "/business-woman-avatar.png" },
-  ]
 
   const filteredCustomers = useMemo(() => {
-    if (!searchTerm.trim()) return customers
+    if (!data) return []
+    if (!searchTerm.trim()) return data.content
 
-    return customers.filter(
+    return data.content.filter(
       (customer) =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.position.toLowerCase().includes(searchTerm.toLowerCase()),
     )
-  }, [searchTerm])
+  }, [searchTerm, data])
 
-  const handleSelectCustomer = (customer: Customer) => {
-    setSelectedCustomerId(customer.id)
+  const handleSelectCustomer = (customer: Person) => {
     onSelect(customer)
+  }
+
+  // Hàm render skeleton loaders
+  const renderSkeletons = () => {
+    return Array.from({ length: 6 }).map((_, index) => (
+      <Card key={index}>
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-3">
+            <Skeleton className="w-12 h-12 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ))
   }
 
   return (
@@ -69,39 +73,66 @@ export function CustomerList({ onSelect }: CustomerListProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredCustomers.map((customer) => (
-          <Card
-            key={customer.id}
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md",
-              selectedCustomerId === customer.id ? "ring-2 ring-orange-500 bg-orange-50" : "hover:bg-gray-50",
-            )}
-            onClick={() => handleSelectCustomer(customer)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <img
-                  src={customer.avatar || "/placeholder.svg"}
-                  alt={customer.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{customer.name}</h3>
-                  <p className="text-sm text-gray-600">{customer.position}</p>
-                </div>
-                {selectedCustomerId === customer.id && (
-                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-full" />
-                  </div>
+        {isLoading
+          ? renderSkeletons()
+          : filteredCustomers.map((customer) => (
+              <Card
+                key={customer.personId}
+                className={cn(
+                  "cursor-pointer transition-all hover:shadow-md",
+                  selectedCustomer?.personId === customer.personId
+                    ? "ring-2 ring-orange-500 bg-orange-50"
+                    : "hover:bg-gray-50",
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                onClick={() => handleSelectCustomer(customer)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={
+                        customer.avatarUrl
+                          ? `data:image/jpeg;base64,${customer.avatarUrl}`
+                          : "/placeholder-user.jpg"
+                      }
+                      alt={customer.fullName}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">{customer.fullName}</h3>
+                      <p className="text-sm text-gray-600">{customer.position}</p>
+                    </div>
+                    {selectedCustomer?.personId === customer.personId && (
+                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
       </div>
 
-      {filteredCustomers.length === 0 && searchTerm.trim() && (
-        <div className="text-center py-8 text-gray-500">Không tìm thấy khách hàng nào phù hợp với "{searchTerm}"</div>
+      {!isLoading && filteredCustomers.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          {searchTerm.trim()
+            ? `Không tìm thấy khách hàng nào phù hợp với "${searchTerm}"`
+            : "Không có dữ liệu khách hàng."}
+        </div>
+      )}
+
+      {/* Phân trang */}
+      {data && data.totalPages > 1 && (
+        <div className="flex justify-center mt-8 space-x-2">
+          <Button onClick={() => onPageChange(data.page - 1)} disabled={data.first}>
+            Trang trước
+          </Button>
+          <span className="flex items-center px-4">
+            Trang {data.page + 1} / {data.totalPages}
+          </span>
+          <Button onClick={() => onPageChange(data.page + 1)} disabled={data.last}>
+            Trang sau
+          </Button>
+        </div>
       )}
     </div>
   )
