@@ -12,6 +12,7 @@ export interface IItem {
   itemName: string
   price: number
   description: string | null
+  imageUrl: string | null
   createdAt: string
   updatedAt: string
 }
@@ -65,4 +66,5 @@ export interface IItemPayload {
   itemName: string
   price: number
   description: string
+  image?: File | null
 }

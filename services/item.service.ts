@@ -34,8 +34,18 @@ export const getItems = async (params: IGetItemsParams): Promise<IItemData> => {
  * @throws {Error} Ném ra lỗi nếu yêu cầu API thất bại.
  */
 export const createItem = async (itemData: IItemPayload): Promise<IItem> => {
+  const formData = new FormData()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { image, ...itemInfo } = itemData
+  formData.append("item", JSON.stringify(itemInfo))
+  if (itemData.image) {
+    formData.append("file", itemData.image)
+  }
+
   try {
-    const response = await api.post("/items", itemData)
+    const response = await api.post("/items", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
     return response.data.data
   } catch (error) {
     console.error("Không thể tạo sản phẩm:", error)
@@ -51,9 +61,19 @@ export const createItem = async (itemData: IItemPayload): Promise<IItem> => {
  * @throws {Error} Ném ra lỗi nếu yêu cầu API thất bại.
  */
 export const updateItem = async (itemData: IItemPayload): Promise<IItem> => {
+  const formData = new FormData()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { image, ...itemInfo } = itemData
+  formData.append("item", JSON.stringify(itemInfo))
+  if (itemData.image) {
+    formData.append("file", itemData.image)
+  }
+
   try {
     // API chỉnh sửa dùng POST theo yêu cầu
-    const response = await api.post(`/items`, itemData)
+    const response = await api.post(`/items`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
     return response.data.data
   } catch (error) {
     console.error(`Không thể cập nhật sản phẩm có ID ${itemData.id}:`, error)

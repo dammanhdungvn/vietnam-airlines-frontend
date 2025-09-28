@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Search, Filter, Download, Plus, Trash2, Edit, ChevronDown } from "lucide-react"
+import { Search, Filter, Download, Plus, Trash2, Edit, ChevronDown, Upload, Paperclip, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -57,6 +57,7 @@ export default function QuanLyDoAnPage() {
     price: "",
     description: "",
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   /**
    * Hàm lấy dữ liệu danh sách sản phẩm từ API.
@@ -112,6 +113,7 @@ export default function QuanLyDoAnPage() {
   const handleAdd = () => {
     setSelectedDoAn(null) // Đảm bảo không có sản phẩm nào được chọn
     setFormData({ itemName: "", price: "", description: "" }) // Reset form
+    setImageFile(null)
     setIsModalOpen(true)
   }
 
@@ -123,6 +125,7 @@ export default function QuanLyDoAnPage() {
       price: doAn.price.toString(),
       description: doAn.description || "",
     })
+    setImageFile(null)
     setIsModalOpen(true)
   }
 
@@ -148,6 +151,7 @@ export default function QuanLyDoAnPage() {
       itemName: formData.itemName,
       price: price,
       description: formData.description,
+      image: imageFile,
     }
 
     try {
@@ -444,6 +448,43 @@ export default function QuanLyDoAnPage() {
                 className="col-span-3"
                 rows={3}
               />
+            </div>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="image" className="text-right mt-2">
+                Hình ảnh
+              </Label>
+              <div className="col-span-3">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <label htmlFor="image" className="cursor-pointer">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 mb-1">Chọn ảnh để tải lên</p>
+                  </label>
+                </div>
+                {imageFile && (
+                  <div className="mt-4 flex items-center justify-between rounded-lg bg-gray-100 p-3">
+                    <div className="flex items-center gap-3">
+                      <Paperclip className="h-5 w-5 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-800">{imageFile.name}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setImageFile(null)}
+                    >
+                      <Trash className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>
