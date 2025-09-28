@@ -35,7 +35,9 @@ Giao diện chính bao gồm các thành phần sau:
     -   Các nút `Previous` và `Next` để chuyển trang.
     -   Danh sách các trang để điều hướng nhanh.
 
-## 3. Luồng hoạt động
+## 3. Các chức năng
+
+### 3.1. Xem và Tìm kiếm Sản phẩm
 
 1.  Khi người dùng truy cập trang, một yêu cầu API (GET `/api/v1/items`) sẽ được tự động gửi đi để lấy trang đầu tiên của danh sách sản phẩm.
 2.  Trong khi tải dữ liệu, một thông báo "Đang tải dữ liệu..." sẽ được hiển thị.
@@ -44,7 +46,33 @@ Giao diện chính bao gồm các thành phần sau:
 5.  Người dùng có thể sử dụng ô tìm kiếm hoặc các dropdown sắp xếp để lọc và xem dữ liệu theo ý muốn. Mỗi thay đổi sẽ kích hoạt một yêu cầu API mới để cập nhật danh sách.
 6.  Người dùng có thể điều hướng qua các trang của danh sách bằng cách sử dụng các nút phân trang.
 
+### 3.2. Thêm mới Sản phẩm
+
+1.  Nhấn nút **"Thêm mới"**.
+2.  Một hộp thoại (dialog) sẽ xuất hiện yêu cầu nhập thông tin: Tên món, Giá (VND), và Chi tiết.
+3.  Sau khi điền đủ thông tin, nhấn nút **"Tạo mới"**.
+4.  Một yêu cầu `POST /api/v1/items` sẽ được gửi đi.
+5.  Nếu thành công, hộp thoại sẽ đóng lại, một thông báo thành công xuất hiện và danh sách sản phẩm sẽ được tự động làm mới.
+
+### 3.3. Chỉnh sửa Sản phẩm
+
+1.  Trong bảng danh sách, nhấn vào biểu tượng **cây bút (Edit)** ở hàng của sản phẩm muốn sửa.
+2.  Hộp thoại sẽ xuất hiện với các thông tin hiện tại của sản phẩm.
+3.  Chỉnh sửa thông tin cần thiết và nhấn **"Lưu thay đổi"**.
+4.  Một yêu cầu `POST /api/v1/items` (với `id` của sản phẩm trong body) sẽ được gửi đi.
+5.  Nếu thành công, hộp thoại sẽ đóng, một thông báo thành công xuất hiện và danh sách sẽ được làm mới.
+
+### 3.4. Xóa Sản phẩm
+
+1.  Nhấn vào biểu tượng **thùng rác (Delete)** ở hàng của sản phẩm muốn xóa.
+2.  Một hộp thoại xác nhận sẽ xuất hiện để hỏi lại.
+3.  Nhấn nút **"Xóa"** để xác nhận.
+4.  Một yêu cầu `DELETE /api/v1/items/{id}` sẽ được gửi đi.
+5.  Nếu thành công, một thông báo thành công sẽ hiện ra và danh sách sản phẩm được làm mới.
+
 ## 4. Tích hợp API
+
+### 4.1. Lấy danh sách sản phẩm
 
 -   **Endpoint**: `GET /api/v1/items`
 -   **Các tham số (Query Params)**:
@@ -55,3 +83,22 @@ Giao diện chính bao gồm các thành phần sau:
     -   `itemName`: Từ khóa tìm kiếm theo tên sản phẩm.
 -   **Phản hồi (Response)**:
     -   Dữ liệu trả về có cấu trúc với thông tin phân trang và một mảng các sản phẩm trong trường `content`.
+
+### 4.2. Thêm mới / Cập nhật sản phẩm
+
+-   **Endpoint**: `POST /api/v1/items`
+-   **Request Body**:
+    ```json
+    {
+      "id": 0, // 0 hoặc bỏ qua cho việc tạo mới, id của sản phẩm cho việc cập nhật
+      "itemName": "string",
+      "price": 0,
+      "description": "string"
+    }
+    ```
+
+### 4.3. Xóa sản phẩm
+
+-   **Endpoint**: `DELETE /api/v1/items/{id}`
+-   **Path Variable**:
+    -   `id`: ID của sản phẩm cần xóa.

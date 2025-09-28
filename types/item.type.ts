@@ -53,3 +53,16 @@ export interface IGetItemsParams {
   minPrice?: number
   maxPrice?: number
 }
+
+/**
+ * @interface IItemPayload
+ * @description Dữ liệu gửi đi khi tạo hoặc cập nhật một sản phẩm.
+ * Đối với cập nhật, 'id' là bắt buộc.
+ * Đối với tạo mới, 'id' có thể bỏ qua hoặc bằng 0.
+ */
+export interface IItemPayload {
+  id?: number
+  itemName: string
+  price: number
+  description: string
+}

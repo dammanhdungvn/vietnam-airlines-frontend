@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
-import { getItems } from "@/services/item.service"
+import { createItem, deleteItem, getItems, updateItem } from "@/services/item.service"
 import { IItem, IItemData } from "@/types/item.type"
 
 /**
@@ -49,91 +49,152 @@ export default function QuanLyDoAnPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false) // Một state cho cả add/edit modal
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedDoAn, setSelectedDoAn] = useState<IItem | null>(null)
-  const [editFormData, setEditFormData] = useState({
+  const [formData, setFormData] = useState({
     itemName: "",
     price: "",
     description: "",
   })
 
   /**
-   * Lấy dữ liệu danh sách sản phẩm từ API mỗi khi có sự thay đổi
-   * về trang, từ khóa tìm kiếm hoặc tiêu chí sắp xếp.
+   * Hàm lấy dữ liệu danh sách sản phẩm từ API.
+   * Được tái sử dụng để làm mới danh sách sau khi thêm, sửa, xóa.
+   */
+  const fetchItems = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const params = {
+        page: currentPage - 1,
+        size: itemsPerPage,
+        sortBy: sortBy,
+        sortDir: sortDir,
+        itemName: searchTerm,
+      }
+      const data = await getItems(params)
+      setItems(data.content)
+      setPagination({
+        page: data.page,
+        size: data.size,
+        totalElements: data.totalElements,
+        totalPages: data.totalPages,
+        first: data.first,
+        last: data.last,
+      })
+    } catch (err) {
+      setError("Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.")
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách sản phẩm từ máy chủ.",
+        variant: "destructive",
+      })
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  /**
+   * Sử dụng useEffect để gọi fetchItems khi các dependency thay đổi.
    */
   useEffect(() => {
-    const fetchItems = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const params = {
-          page: currentPage - 1,
-          size: itemsPerPage,
-          sortBy: sortBy,
-          sortDir: sortDir,
-          itemName: searchTerm,
-        }
-        const data = await getItems(params)
-        setItems(data.content)
-        setPagination({
-          page: data.page,
-          size: data.size,
-          totalElements: data.totalElements,
-          totalPages: data.totalPages,
-          first: data.first,
-          last: data.last,
-        })
-      } catch (err) {
-        setError("Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.")
-        console.error(err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchItems()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, searchTerm, sortBy, sortDir])
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, pagination.totalPages)))
   }
 
-  // TODO: Chức năng edit và delete sẽ được cập nhật để gọi API sau
+  /** Mở dialog để thêm sản phẩm mới */
+  const handleAdd = () => {
+    setSelectedDoAn(null) // Đảm bảo không có sản phẩm nào được chọn
+    setFormData({ itemName: "", price: "", description: "" }) // Reset form
+    setIsModalOpen(true)
+  }
+
+  /** Mở dialog để chỉnh sửa sản phẩm */
   const handleEdit = (doAn: IItem) => {
     setSelectedDoAn(doAn)
-    setEditFormData({
+    setFormData({
       itemName: doAn.itemName,
       price: doAn.price.toString(),
       description: doAn.description || "",
     })
-    setIsEditDialogOpen(true)
+    setIsModalOpen(true)
   }
 
+  /** Mở dialog xác nhận xóa */
   const handleDelete = (doAn: IItem) => {
     setSelectedDoAn(doAn)
     setIsDeleteDialogOpen(true)
   }
 
-  const confirmEdit = () => {
-    if (!selectedDoAn) return
-    // Logic cập nhật API sẽ ở đây
-    setIsEditDialogOpen(false)
-    toast({
-      title: "Cập nhật thành công (chưa gọi API)",
-      description: `Đã cập nhật thông tin món ${editFormData.itemName}`,
-    })
+  /** Xử lý việc gửi form (cả thêm và sửa) */
+  const handleSubmit = async () => {
+    const price = Number.parseInt(formData.price)
+    if (!formData.itemName || Number.isNaN(price) || price < 0) {
+      toast({
+        title: "Dữ liệu không hợp lệ",
+        description: "Vui lòng kiểm tra lại tên món và giá.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const payload = {
+      itemName: formData.itemName,
+      price: price,
+      description: formData.description,
+    }
+
+    try {
+      if (selectedDoAn) {
+        // Chế độ chỉnh sửa
+        await updateItem({ ...payload, id: selectedDoAn.id })
+        toast({
+          title: "Cập nhật thành công",
+          description: `Đã cập nhật thông tin món ${formData.itemName}`,
+        })
+      } else {
+        // Chế độ thêm mới
+        await createItem(payload)
+        toast({
+          title: "Thêm thành công",
+          description: `Đã thêm món ${formData.itemName} vào danh sách.`,
+        })
+      }
+      setIsModalOpen(false)
+      fetchItems() // Tải lại danh sách sản phẩm
+    } catch (error) {
+      toast({
+        title: "Thao tác thất bại",
+        description: "Đã có lỗi xảy ra. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+    }
   }
 
-  const confirmDelete = () => {
+  /** Xác nhận và thực hiện xóa sản phẩm */
+  const confirmDelete = async () => {
     if (!selectedDoAn) return
-    // Logic xóa API sẽ ở đây
-    setIsDeleteDialogOpen(false)
-    toast({
-      title: "Xóa thành công (chưa gọi API)",
-      description: `Đã xóa món ${selectedDoAn.itemName}`,
-      variant: "destructive",
-    })
+    try {
+      await deleteItem(selectedDoAn.id)
+      setIsDeleteDialogOpen(false)
+      toast({
+        title: "Xóa thành công",
+        description: `Đã xóa món ${selectedDoAn.itemName}`,
+      })
+      fetchItems() // Tải lại danh sách
+    } catch (error) {
+      toast({
+        title: "Xóa thất bại",
+        description: `Không thể xóa món ${selectedDoAn.itemName}. Vui lòng thử lại.`,
+        variant: "destructive",
+      })
+    }
   }
 
   /**
@@ -168,7 +229,7 @@ export default function QuanLyDoAnPage() {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
+          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-2" />
             Thêm mới
           </Button>
@@ -336,12 +397,16 @@ export default function QuanLyDoAnPage() {
         </div>
       </div>
 
-      {/* Dialog sửa thông tin đồ ăn */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      {/* Dialog thêm/sửa thông tin đồ ăn */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Sửa thông tin đồ ăn</DialogTitle>
-            <DialogDescription>Cập nhật thông tin món {selectedDoAn?.itemName}</DialogDescription>
+            <DialogTitle>{selectedDoAn ? "Sửa thông tin đồ ăn" : "Thêm đồ ăn mới"}</DialogTitle>
+            <DialogDescription>
+              {selectedDoAn
+                ? `Cập nhật thông tin món ${selectedDoAn.itemName}`
+                : "Nhập thông tin chi tiết cho món ăn mới."}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -350,19 +415,19 @@ export default function QuanLyDoAnPage() {
               </Label>
               <Input
                 id="tenMon"
-                value={editFormData.itemName}
-                onChange={(e) => setEditFormData({ ...editFormData, itemName: e.target.value })}
+                value={formData.itemName}
+                onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="gia" className="text-right">
-                Giá
+                Giá (VND)
               </Label>
               <Input
                 id="gia"
-                value={editFormData.price}
-                onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 className="col-span-3"
                 placeholder="VD: 100000"
                 type="number"
@@ -374,19 +439,19 @@ export default function QuanLyDoAnPage() {
               </Label>
               <Textarea
                 id="chiTiet"
-                value={editFormData.description}
-                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="col-span-3"
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={confirmEdit} className="bg-orange-500 hover:bg-orange-600">
-              Lưu thay đổi
+            <Button onClick={handleSubmit} className="bg-orange-500 hover:bg-orange-600">
+              {selectedDoAn ? "Lưu thay đổi" : "Tạo mới"}
             </Button>
           </DialogFooter>
         </DialogContent>

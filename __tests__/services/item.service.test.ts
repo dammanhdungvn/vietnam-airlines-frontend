@@ -3,9 +3,9 @@
  * @description This file contains unit tests for the item service, mocking API calls.
  */
 
-import { getItems } from "@/services/item.service"
+import { getItems, createItem, updateItem, deleteItem } from "@/services/item.service"
 import api from "@/lib/api"
-import { IItemData, IItemResponse } from "@/types/item.type"
+import { IItemData, IItemResponse, IItemPayload, IItem } from "@/types/item.type"
 
 // Mock the api module
 jest.mock("@/lib/api")
@@ -99,6 +99,108 @@ describe("Item Service", () => {
 
       // Assert
       expect(mockedApi.get).toHaveBeenCalledWith("/items", { params })
+    })
+  })
+
+  describe("createItem", () => {
+    it("should create an item successfully via the API", async () => {
+      // Arrange
+      const newItemPayload: IItemPayload = {
+        itemName: "New Item",
+        price: 100000,
+        description: "A new item for testing",
+      }
+      const mockCreatedItem: IItem = {
+        id: 100,
+        ...newItemPayload,
+        createdAt: "2025-09-28 10:00:00",
+        updatedAt: "2025-09-28 10:00:00",
+      }
+      mockedApi.post.mockResolvedValue({ data: { data: mockCreatedItem } })
+
+      // Act
+      const result = await createItem(newItemPayload)
+
+      // Assert
+      expect(mockedApi.post).toHaveBeenCalledWith("/items", newItemPayload)
+      expect(result).toEqual(mockCreatedItem)
+    })
+
+    it("should throw an error if the create API call fails", async () => {
+      // Arrange
+      const newItemPayload: IItemPayload = {
+        itemName: "New Item",
+        price: 100000,
+        description: "A new item for testing",
+      }
+      const errorMessage = "Creation Failed"
+      mockedApi.post.mockRejectedValue(new Error(errorMessage))
+
+      // Act & Assert
+      await expect(createItem(newItemPayload)).rejects.toThrow(errorMessage)
+      expect(mockedApi.post).toHaveBeenCalledWith("/items", newItemPayload)
+    })
+  })
+
+  describe("updateItem", () => {
+    it("should update an item successfully via the API", async () => {
+      // Arrange
+      const updatePayload: IItemPayload = {
+        id: 1,
+        itemName: "Updated Item",
+        price: 150000,
+        description: "An updated item description",
+      }
+      const mockUpdatedItem: IItem = {
+        ...updatePayload,
+        id: 1,
+        createdAt: "2025-09-24 14:36:08",
+        updatedAt: "2025-09-28 11:00:00",
+      }
+      mockedApi.post.mockResolvedValue({ data: { data: mockUpdatedItem } })
+
+      // Act
+      const result = await updateItem(updatePayload)
+
+      // Assert
+      expect(mockedApi.post).toHaveBeenCalledWith(`/items`, updatePayload)
+      expect(result).toEqual(mockUpdatedItem)
+    })
+
+    it("should throw an error if the update API call fails", async () => {
+      // Arrange
+      const updatePayload: IItemPayload = { id: 1, itemName: "Updated Item", price: 150000, description: "" }
+      const errorMessage = "Update Failed"
+      mockedApi.post.mockRejectedValue(new Error(errorMessage))
+
+      // Act & Assert
+      await expect(updateItem(updatePayload)).rejects.toThrow(errorMessage)
+      expect(mockedApi.post).toHaveBeenCalledWith(`/items`, updatePayload)
+    })
+  })
+
+  describe("deleteItem", () => {
+    it("should send a delete request successfully", async () => {
+      // Arrange
+      const itemId = 123
+      mockedApi.delete.mockResolvedValue({})
+
+      // Act
+      await deleteItem(itemId)
+
+      // Assert
+      expect(mockedApi.delete).toHaveBeenCalledWith(`/items/${itemId}`)
+    })
+
+    it("should throw an error if the delete API call fails", async () => {
+      // Arrange
+      const itemId = 123
+      const errorMessage = "Deletion Failed"
+      mockedApi.delete.mockRejectedValue(new Error(errorMessage))
+
+      // Act & Assert
+      await expect(deleteItem(itemId)).rejects.toThrow(errorMessage)
+      expect(mockedApi.delete).toHaveBeenCalledWith(`/items/${itemId}`)
     })
   })
 })
