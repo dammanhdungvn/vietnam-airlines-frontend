@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Search, Filter, Download, Plus, Trash2, Edit, RefreshCw, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,231 +23,143 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
-
-interface GheData {
-  id: number
-  so: number
-  loaiGhe: string
-  badge: string
-  giaDuRa: string
-  giaKhachTra: string
-  nguoiDatCho: {
-    ten: string
-    email: string
-    avatar: string
-  }
-  ngayTao: string
-  ngaySua: string
-}
+import { SeatMap } from "@/components/seat-map"
+import { getAllSeats } from "@/services/seat.service"
+import { ISeat, SeatStatus, SeatType } from "@/types/seat.type"
 
 /**
  * Trang Quản lý ghế
- * Hiển thị danh sách ghế đã đặt với thông tin khách hàng và giá cả
+ * Hiển thị sơ đồ ghế và danh sách ghế với thông tin chi tiết
  */
 export default function QuanLyGhePage() {
+  const [seats, setSeats] = useState<ISeat[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
   const [sortBy, setSortBy] = useState("Tên số ghế")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const itemsPerPage = 10
   const router = useRouter()
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedGhe, setSelectedGhe] = useState<GheData | null>(null)
+  const [selectedGhe, setSelectedGhe] = useState<ISeat | null>(null)
   const [editFormData, setEditFormData] = useState({
-    loaiGhe: "",
-    badge: "",
-    giaDuRa: "",
-    giaKhachTra: "",
+    seatNumber: "",
+    type: "",
+    basePrice: "",
   })
 
-  const [danhSachGhe, setDanhSachGhe] = useState<GheData[]>([
-    {
-      id: 1,
-      so: 1,
-      loaiGhe: "1A",
-      badge: "VIP",
-      giaDuRa: "100.000đ",
-      giaKhachTra: "100.000đ",
-      nguoiDatCho: {
-        ten: "Tran Phuong Thao",
-        email: "tpt@gmail.com",
-        avatar: "/woman-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-    {
-      id: 2,
-      so: 2,
-      loaiGhe: "2C",
-      badge: "VIP",
-      giaDuRa: "100.000đ",
-      giaKhachTra: "100.000đ",
-      nguoiDatCho: {
-        ten: "Nguyen Van A",
-        email: "nguyenvana@gmail.com",
-        avatar: "/man-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-    {
-      id: 3,
-      so: 3,
-      loaiGhe: "4B",
-      badge: "Thường",
-      giaDuRa: "100.000đ",
-      giaKhachTra: "100.000đ",
-      nguoiDatCho: {
-        ten: "Nguyen Van B",
-        email: "nguyenvanb@gmail.com",
-        avatar: "/diverse-person-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-    {
-      id: 4,
-      so: 4,
-      loaiGhe: "2A",
-      badge: "VIP",
-      giaDuRa: "100.000đ",
-      giaKhachTra: "100.000đ",
-      nguoiDatCho: {
-        ten: "Nguyen Van C",
-        email: "nguyenvanc@gmail.com",
-        avatar: "/woman-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-    {
-      id: 5,
-      so: 5,
-      loaiGhe: "9M",
-      badge: "Free",
-      giaDuRa: "0đ",
-      giaKhachTra: "0đ",
-      nguoiDatCho: {
-        ten: "Nguyen Van D",
-        email: "nguyenvand@gmail.com",
-        avatar: "/woman-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-    {
-      id: 6,
-      so: 6,
-      loaiGhe: "10C",
-      badge: "Free",
-      giaDuRa: "0đ",
-      giaKhachTra: "0đ",
-      nguoiDatCho: {
-        ten: "Nguyen Van E",
-        email: "nguyenvane@gmail.com",
-        avatar: "/diverse-person-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-    {
-      id: 7,
-      so: 7,
-      loaiGhe: "2Q",
-      badge: "VIP",
-      giaDuRa: "100.000đ",
-      giaKhachTra: "200.000đ",
-      nguoiDatCho: {
-        ten: "Nguyen Van F",
-        email: "nguyenvanf@gmail.com",
-        avatar: "/woman-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-    {
-      id: 8,
-      so: 8,
-      loaiGhe: "5C",
-      badge: "Thường",
-      giaDuRa: "100.000đ",
-      giaKhachTra: "500.000đ",
-      nguoiDatCho: {
-        ten: "Nguyen Van G",
-        email: "nguyenvang@gmail.com",
-        avatar: "/woman-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-    {
-      id: 9,
-      so: 9,
-      loaiGhe: "2X",
-      badge: "VIP",
-      giaDuRa: "100.000đ",
-      giaKhachTra: "600.000đ",
-      nguoiDatCho: {
-        ten: "Nguyen Van H",
-        email: "nguyenvanh@gmail.com",
-        avatar: "/man-avatar.png",
-      },
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-    },
-  ])
+  /**
+   * @function fetchSeats
+   * @description Lấy dữ liệu ghế từ API và cập nhật state.
+   */
+  const fetchSeats = async () => {
+    setLoading(true)
+    try {
+      const seatsData = await getAllSeats()
+      setSeats(seatsData)
+    } catch (error) {
+      console.error('Lỗi khi tải dữ liệu ghế:', error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải dữ liệu ghế. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const filteredDanhSachGhe = useMemo(() => {
-    let filtered = danhSachGhe
+  // Gọi API khi component mount
+  useEffect(() => {
+    fetchSeats()
+  }, [])
+
+  /**
+   * @function getSeatTypeLabel
+   * @description Chuyển đổi SeatType enum thành label tiếng Việt.
+   * @param {SeatType} type - Loại ghế.
+   * @returns {string} Label tiếng Việt.
+   */
+  const getSeatTypeLabel = (type: SeatType): string => {
+    switch (type) {
+      case SeatType.VIP:
+        return "VIP"
+      case SeatType.NORMAL:
+        return "Thường"
+      case SeatType.FREE:
+        return "Free"
+      case SeatType.BLOCK:
+        return "Bị khóa"
+      default:
+        return "Không xác định"
+    }
+  }
+
+  /**
+   * @function getSeatStatusLabel
+   * @description Chuyển đổi SeatStatus enum thành label tiếng Việt.
+   * @param {SeatStatus} status - Trạng thái ghế.
+   * @returns {string} Label tiếng Việt.
+   */
+  const getSeatStatusLabel = (status: SeatStatus): string => {
+    return status === SeatStatus.AVAILABLE ? "Trống" : "Đã đặt"
+  }
+
+  const filteredSeats = useMemo(() => {
+    let filtered = seats
 
     // Filter theo search term
     if (searchTerm) {
       filtered = filtered.filter(
-        (ghe) =>
-          ghe.loaiGhe.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          ghe.nguoiDatCho.ten.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          ghe.nguoiDatCho.email.toLowerCase().includes(searchTerm.toLowerCase()),
+        (seat) =>
+          seat.seatNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          getSeatTypeLabel(seat.type).toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
+    // Filter theo loại ghế
     if (selectedFilters.includes("VIP")) {
-      filtered = filtered.filter((ghe) => ghe.badge === "VIP")
+      filtered = filtered.filter((seat) => seat.type === SeatType.VIP)
     }
     if (selectedFilters.includes("Thường")) {
-      filtered = filtered.filter((ghe) => ghe.badge === "Thường")
+      filtered = filtered.filter((seat) => seat.type === SeatType.NORMAL)
     }
     if (selectedFilters.includes("Free")) {
-      filtered = filtered.filter((ghe) => ghe.badge === "Free")
+      filtered = filtered.filter((seat) => seat.type === SeatType.FREE)
+    }
+    if (selectedFilters.includes("Bị khóa")) {
+      filtered = filtered.filter((seat) => seat.type === SeatType.BLOCK)
     }
     if (selectedFilters.includes("Có giá")) {
-      filtered = filtered.filter((ghe) => ghe.giaDuRa !== "0đ")
+      filtered = filtered.filter((seat) => seat.basePrice !== null && seat.basePrice > 0)
     }
 
     // Sort theo tiêu chí được chọn
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "Tên số ghế":
-          return a.loaiGhe.localeCompare(b.loaiGhe)
+          return a.seatNumber.localeCompare(b.seatNumber)
         case "Loại ghế":
-          return a.badge.localeCompare(b.badge)
-        case "Người đặt":
-          return a.nguoiDatCho.ten.localeCompare(b.nguoiDatCho.ten)
+          return a.type.localeCompare(b.type)
+        case "Giá":
+          return (a.basePrice || 0) - (b.basePrice || 0)
+        case "Trạng thái":
+          return a.status.localeCompare(b.status)
         default:
           return 0
       }
     })
 
     return filtered
-  }, [searchTerm, selectedFilters, sortBy])
+  }, [seats, searchTerm, selectedFilters, sortBy])
 
-  const totalPages = Math.ceil(filteredDanhSachGhe.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredSeats.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentItems = filteredDanhSachGhe.slice(startIndex, endIndex)
+  const currentItems = filteredSeats.slice(startIndex, endIndex)
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -265,8 +177,8 @@ export default function QuanLyGhePage() {
     }
   }
 
-  const handleViewDetail = (gheId: number) => {
-    router.push(`/quan-ly-ghe/${gheId}`)
+  const handleViewDetail = (seatId: number) => {
+    router.push(`/quan-ly-ghe/${seatId}`)
   }
 
   const toggleFilter = (filter: string) => {
@@ -277,74 +189,90 @@ export default function QuanLyGhePage() {
     setSelectedFilters(selectedFilters.filter((f) => f !== filter))
   }
 
-  const getBadgeColor = (badge: string) => {
-    switch (badge) {
-      case "VIP":
+  /**
+   * @function getBadgeColor
+   * @description Xác định màu sắc cho badge dựa trên loại ghế.
+   * @param {SeatType} type - Loại ghế.
+   * @returns {string} Class CSS cho màu sắc.
+   */
+  const getBadgeColor = (type: SeatType) => {
+    switch (type) {
+      case SeatType.VIP:
         return "bg-yellow-100 text-yellow-800"
-      case "Thường":
+      case SeatType.NORMAL:
         return "bg-teal-100 text-teal-800"
-      case "Free":
+      case SeatType.FREE:
+        return "bg-green-100 text-green-800"
+      case SeatType.BLOCK:
         return "bg-gray-100 text-gray-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
   }
 
-  const handleEdit = (ghe: GheData) => {
-    setSelectedGhe(ghe)
+  const handleEdit = (seat: ISeat) => {
+    setSelectedGhe(seat)
     setEditFormData({
-      loaiGhe: ghe.loaiGhe,
-      badge: ghe.badge,
-      giaDuRa: ghe.giaDuRa,
-      giaKhachTra: ghe.giaKhachTra,
+      seatNumber: seat.seatNumber,
+      type: seat.type,
+      basePrice: seat.basePrice?.toString() || "",
     })
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = (ghe: GheData) => {
-    setSelectedGhe(ghe)
+  const handleDelete = (seat: ISeat) => {
+    setSelectedGhe(seat)
     setIsDeleteDialogOpen(true)
   }
 
   const confirmEdit = () => {
     if (!selectedGhe) return
 
-    const updatedDanhSach = danhSachGhe.map((ghe) =>
-      ghe.id === selectedGhe.id
+    const updatedSeats = seats.map((seat) =>
+      seat.id === selectedGhe.id
         ? {
-            ...ghe,
-            loaiGhe: editFormData.loaiGhe,
-            badge: editFormData.badge,
-            giaDuRa: editFormData.giaDuRa,
-            giaKhachTra: editFormData.giaKhachTra,
-            ngaySua: new Date().toLocaleDateString("vi-VN"),
+            ...seat,
+            seatNumber: editFormData.seatNumber,
+            type: editFormData.type as SeatType,
+            basePrice: editFormData.basePrice ? parseFloat(editFormData.basePrice) : null,
           }
-        : ghe,
+        : seat,
     )
 
-    setDanhSachGhe(updatedDanhSach)
+    setSeats(updatedSeats)
     setIsEditDialogOpen(false)
     setSelectedGhe(null)
 
     toast({
       title: "Cập nhật thành công",
-      description: `Đã cập nhật thông tin ghế ${editFormData.loaiGhe}`,
+      description: `Đã cập nhật thông tin ghế ${editFormData.seatNumber}`,
     })
   }
 
   const confirmDelete = () => {
     if (!selectedGhe) return
 
-    const updatedDanhSach = danhSachGhe.filter((ghe) => ghe.id !== selectedGhe.id)
-    setDanhSachGhe(updatedDanhSach)
+    const updatedSeats = seats.filter((seat) => seat.id !== selectedGhe.id)
+    setSeats(updatedSeats)
     setIsDeleteDialogOpen(false)
     setSelectedGhe(null)
 
     toast({
       title: "Xóa thành công",
-      description: `Đã xóa ghế ${selectedGhe.loaiGhe}`,
+      description: `Đã xóa ghế ${selectedGhe.seatNumber}`,
       variant: "destructive",
     })
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center" role="status">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-500" />
+          <p className="text-gray-600">Đang tải dữ liệu ghế...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -353,9 +281,10 @@ export default function QuanLyGhePage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý Ghế</h1>
+          <p className="text-gray-600 mt-1">Tổng cộng {seats.length} ghế</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={fetchSeats}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Làm mới
           </Button>
@@ -370,193 +299,213 @@ export default function QuanLyGhePage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center space-x-4 mb-6">
-        {selectedFilters.map((filter) => (
-          <Badge key={filter} variant="secondary" className="px-3 py-1">
-            {filter}
-            <button onClick={() => removeFilter(filter)} className="ml-2 text-gray-500 hover:text-gray-700">
-              ×
-            </button>
-          </Badge>
-        ))}
-        <DropdownMenu open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
-              More filters
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            <DropdownMenuCheckboxItem
-              checked={selectedFilters.includes("VIP")}
-              onCheckedChange={() => toggleFilter("VIP")}
-            >
-              Ghế VIP
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={selectedFilters.includes("Thường")}
-              onCheckedChange={() => toggleFilter("Thường")}
-            >
-              Ghế Thường
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={selectedFilters.includes("Free")}
-              onCheckedChange={() => toggleFilter("Free")}
-            >
-              Ghế Free
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={selectedFilters.includes("Có giá")}
-              onCheckedChange={() => toggleFilter("Có giá")}
-            >
-              Ghế có giá
-            </DropdownMenuCheckboxItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <div className="flex items-center space-x-2 ml-auto">
-          <Select
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sắp xếp theo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Tên số ghế">Tên số ghế</SelectItem>
-              <SelectItem value="Loại ghế">Loại ghế</SelectItem>
-              <SelectItem value="Người đặt">Người đặt</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Tìm kiếm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
-          </div>
-        </div>
+      {/* Sơ đồ ghế */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Sơ đồ ghế</h2>
+        <SeatMap seats={seats} />
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Loại ghế
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giá dự ra
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giá khách trả
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Người đặt chỗ
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày tạo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày sửa
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentItems.map((ghe) => (
-                <tr key={ghe.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ghe.so}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-900">{ghe.loaiGhe}</span>
-                      <Badge className={getBadgeColor(ghe.badge)}>{ghe.badge}</Badge>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ghe.giaDuRa}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ghe.giaKhachTra}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <button
-                        onClick={() => handleViewDetail(ghe.id)}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        {ghe.nguoiDatCho.ten}
-                      </button>
-                      <div className="text-sm text-gray-500">{ghe.nguoiDatCho.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ghe.ngayTao}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ghe.ngaySua}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(ghe)}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(ghe)}
-                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Danh sách ghế */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Danh sách ghế</h2>
+        
+        {/* Filters */}
+        <div className="flex items-center space-x-4 mb-6">
+          {selectedFilters.map((filter) => (
+            <Badge key={filter} variant="secondary" className="px-3 py-1">
+              {filter}
+              <button onClick={() => removeFilter(filter)} className="ml-2 text-gray-500 hover:text-gray-700">
+                ×
+              </button>
+            </Badge>
+          ))}
+          <DropdownMenu open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="w-4 h-4 mr-2" />
+                Bộ lọc
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuCheckboxItem
+                checked={selectedFilters.includes("VIP")}
+                onCheckedChange={() => toggleFilter("VIP")}
+              >
+                Ghế VIP
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={selectedFilters.includes("Thường")}
+                onCheckedChange={() => toggleFilter("Thường")}
+              >
+                Ghế Thường
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={selectedFilters.includes("Free")}
+                onCheckedChange={() => toggleFilter("Free")}
+              >
+                Ghế Free
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={selectedFilters.includes("Bị khóa")}
+                onCheckedChange={() => toggleFilter("Bị khóa")}
+              >
+                Ghế bị khóa
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={selectedFilters.includes("Có giá")}
+                onCheckedChange={() => toggleFilter("Có giá")}
+              >
+                Ghế có giá
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex items-center space-x-2 ml-auto">
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sắp xếp theo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Tên số ghế">Tên số ghế</SelectItem>
+                <SelectItem value="Loại ghế">Loại ghế</SelectItem>
+                <SelectItem value="Giá">Giá</SelectItem>
+                <SelectItem value="Trạng thái">Trạng thái</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Tìm kiếm ghế..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-64"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentPage === 1}>
-            ← Previous
-          </Button>
-          <div className="flex items-center space-x-2">
-            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(page)}
-                className={currentPage === page ? "bg-orange-500 text-white" : ""}
-              >
-                {page}
-              </Button>
-            ))}
-            {totalPages > 10 && (
-              <>
-                <span className="text-sm text-gray-500">...</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(totalPages)}
-                  className={currentPage === totalPages ? "bg-orange-500 text-white" : ""}
-                >
-                  {totalPages}
-                </Button>
-              </>
-            )}
+        {/* Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Số ghế
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Loại ghế
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Giá
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentItems.map((seat) => (
+                  <tr key={seat.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{seat.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-900">{seat.seatNumber}</span>
+                        <Badge className={getBadgeColor(seat.type)}>{getSeatTypeLabel(seat.type)}</Badge>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getSeatTypeLabel(seat.type)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {seat.basePrice ? `${seat.basePrice.toLocaleString('vi-VN')}đ` : 'Miễn phí'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Badge 
+                        variant={seat.status === SeatStatus.AVAILABLE ? "default" : "secondary"}
+                        className={seat.status === SeatStatus.AVAILABLE ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                      >
+                        {getSeatStatusLabel(seat.status)}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetail(seat.id)}
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(seat)}
+                          className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(seat)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <Button variant="outline" size="sm" onClick={handleNext} disabled={currentPage === totalPages}>
-            Next →
-          </Button>
+
+          {/* Pagination */}
+          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Hiển thị {startIndex + 1} đến {Math.min(endIndex, filteredSeats.length)} trong tổng số {filteredSeats.length} ghế
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentPage === 1}>
+                ← Trước
+              </Button>
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(page)}
+                    className={currentPage === page ? "bg-orange-500 text-white" : ""}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                {totalPages > 5 && (
+                  <>
+                    <span className="text-sm text-gray-500">...</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(totalPages)}
+                      className={currentPage === totalPages ? "bg-orange-500 text-white" : ""}
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentPage === totalPages}>
+                Sau →
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -564,58 +513,50 @@ export default function QuanLyGhePage() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Sửa thông tin ghế</DialogTitle>
-            <DialogDescription>Cập nhật thông tin ghế {selectedGhe?.loaiGhe}</DialogDescription>
+            <DialogDescription>Cập nhật thông tin ghế {selectedGhe?.seatNumber}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="loaiGhe" className="text-right">
-                Loại ghế
+              <Label htmlFor="seatNumber" className="text-right">
+                Số ghế
               </Label>
               <Input
-                id="loaiGhe"
-                value={editFormData.loaiGhe}
-                onChange={(e) => setEditFormData({ ...editFormData, loaiGhe: e.target.value })}
+                id="seatNumber"
+                value={editFormData.seatNumber}
+                onChange={(e) => setEditFormData({ ...editFormData, seatNumber: e.target.value })}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="badge" className="text-right">
-                Hạng ghế
+              <Label htmlFor="type" className="text-right">
+                Loại ghế
               </Label>
               <Select
-                value={editFormData.badge}
-                onValueChange={(value) => setEditFormData({ ...editFormData, badge: value })}
+                value={editFormData.type}
+                onValueChange={(value) => setEditFormData({ ...editFormData, type: value })}
               >
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Chọn hạng ghế" />
+                  <SelectValue placeholder="Chọn loại ghế" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="VIP">VIP</SelectItem>
-                  <SelectItem value="Thường">Thường</SelectItem>
-                  <SelectItem value="Free">Free</SelectItem>
+                  <SelectItem value={SeatType.VIP}>VIP</SelectItem>
+                  <SelectItem value={SeatType.NORMAL}>Thường</SelectItem>
+                  <SelectItem value={SeatType.FREE}>Free</SelectItem>
+                  <SelectItem value={SeatType.BLOCK}>Bị khóa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="giaDuRa" className="text-right">
-                Giá dự ra
+              <Label htmlFor="basePrice" className="text-right">
+                Giá gốc
               </Label>
               <Input
-                id="giaDuRa"
-                value={editFormData.giaDuRa}
-                onChange={(e) => setEditFormData({ ...editFormData, giaDuRa: e.target.value })}
+                id="basePrice"
+                type="number"
+                value={editFormData.basePrice}
+                onChange={(e) => setEditFormData({ ...editFormData, basePrice: e.target.value })}
                 className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="giaKhachTra" className="text-right">
-                Giá khách trả
-              </Label>
-              <Input
-                id="giaKhachTra"
-                value={editFormData.giaKhachTra}
-                onChange={(e) => setEditFormData({ ...editFormData, giaKhachTra: e.target.value })}
-                className="col-span-3"
+                placeholder="Nhập giá (VND)"
               />
             </div>
           </div>
@@ -635,7 +576,7 @@ export default function QuanLyGhePage() {
           <DialogHeader>
             <DialogTitle>Xác nhận xóa</DialogTitle>
             <DialogDescription>
-              Bạn có chắc chắn muốn xóa ghế {selectedGhe?.loaiGhe}? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa ghế {selectedGhe?.seatNumber}? Hành động này không thể hoàn tác.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

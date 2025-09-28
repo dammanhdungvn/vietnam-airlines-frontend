@@ -31,12 +31,21 @@
 - **Phân trang**: Điều hướng trang với số lượng hiển thị tùy chỉnh
 
 ### ✈️ Quản lý Ghế Chuyên nghiệp
-- **Sơ đồ ghế tương tác**: Hiển thị trực quan trạng thái ghế
-- **Phân loại ghế**: VIP (đỏ), Thường (xanh), Miễn phí (xám)
-- **Quản lý giá vé**: Cập nhật giá theo từng loại ghế
-- **Theo dõi đặt chỗ**: Trạng thái Available/Occupied/Reserved
-- **Tìm kiếm và lọc**: Lọc theo loại ghế, hạng ghế, giá
-- **Chỉnh sửa real-time**: Cập nhật thông tin ghế với toast notification
+- **Sơ đồ ghế tương tác**: Hiển thị trực quan trạng thái ghế với màu sắc phân biệt
+- **Phân loại ghế đa dạng**: 
+  - VIP (vàng với icon sao) - Ghế hạng thương gia
+  - NORMAL (xanh teal) - Ghế hạng phổ thông  
+  - FREE (xanh lá) - Ghế miễn phí
+  - BLOCK (xám) - Ghế bị khóa không thể chọn
+- **Trạng thái ghế**: AVAILABLE (trống) và TAKEN (đã có người ngồi)
+- **Quản lý giá vé**: Cập nhật giá theo từng loại ghế, hỗ trợ ghế miễn phí
+- **Tìm kiếm thông minh**: Tìm theo số ghế hoặc loại ghế
+- **Bộ lọc nâng cao**: Lọc theo loại ghế, ghế có giá, trạng thái
+- **Sắp xếp linh hoạt**: Theo tên ghế, loại, giá, trạng thái
+- **Phân trang**: Hiển thị 10 ghế mỗi trang với điều hướng dễ dàng
+- **CRUD hoàn chỉnh**: Thêm, sửa, xóa ghế với validation
+- **API Integration**: Tích hợp với RESTful API để đồng bộ dữ liệu
+- **Responsive Design**: Tối ưu cho mọi thiết bị từ desktop đến mobile
 
 ### 🍽️ Quản lý Đồ ăn & Thức uống
 - **Menu đa dạng**: Quản lý thực đơn với hình ảnh và mô tả
@@ -193,9 +202,13 @@ NEXT_PUBLIC_UPLOAD_MAX_SIZE=5242880  # 5MB
 4. **Xóa khách**: Click icon "Xóa" → Xác nhận trong dialog
 
 #### Quản lý ghế
-1. **Xem sơ đồ**: Màu sắc thể hiện trạng thái ghế
-2. **Cập nhật giá**: Click "Sửa" → Nhập giá mới → "Cập nhật"
-3. **Thay đổi loại**: Chọn VIP/Thường/Free từ dropdown
+1. **Xem sơ đồ**: Màu sắc và icon thể hiện loại và trạng thái ghế
+2. **Tìm kiếm ghế**: Nhập số ghế hoặc loại ghế vào ô tìm kiếm
+3. **Lọc ghế**: Sử dụng bộ lọc để hiển thị ghế theo tiêu chí
+4. **Sắp xếp**: Chọn tiêu chí sắp xếp từ dropdown
+5. **Cập nhật thông tin**: Click "Sửa" → Chỉnh sửa → "Lưu thay đổi"
+6. **Xóa ghế**: Click "Xóa" → Xác nhận trong dialog
+7. **Xem chi tiết**: Click "Xem" để chuyển đến trang chi tiết ghế
 
 #### Quản lý đồ ăn
 1. **Thêm món**: Click "Thêm mới" → Điền thông tin → Chọn có phí/miễn phí
@@ -454,6 +467,9 @@ The project includes comprehensive unit tests for:
 - **Login functionality**: Component, service, and context tests
 - **Dashboard functionality**: Component and statistics service tests
 - **Authentication flow**: Complete user authentication workflow tests
+- **Seat management**: Service, component, and page tests for seat functionality
+- **Seat map component**: Interactive seat map with different seat types and statuses
+- **API integration**: Seat service with proper error handling and data fetching
 
 All tests follow industry best practices with proper mocking and isolation.
 
