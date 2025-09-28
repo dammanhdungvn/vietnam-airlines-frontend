@@ -52,10 +52,10 @@ export default function LoginPage() {
    */
   const onSubmit = async (data: ILoginPayload) => {
     try {
-      const response = await login(data) // Gọi API đăng nhập
+      const responseData = await login(data) // Gọi API đăng nhập và lấy thẳng data
       // Kiểm tra đăng nhập thành công
-      if (response.code === 200 && response.data.accessToken) {
-        authLogin(response.data) // Gọi hàm login từ AuthContext để lưu thông tin
+      if (responseData.code === 200 && responseData.data.accessToken) {
+        authLogin(responseData.data) // Gọi hàm login từ AuthContext để lưu thông tin
         toast({
           title: "Thành công",
           description: "Đăng nhập thành công!",
@@ -65,7 +65,7 @@ export default function LoginPage() {
         // Hiển thị thông báo lỗi từ API
         toast({
           title: "Lỗi",
-          description: response.message,
+          description: responseData.message,
           variant: "destructive",
         })
       }

@@ -43,7 +43,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
  */
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true) // State để kiểm tra quá trình tải dữ liệu từ localStorage
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   /**
@@ -59,7 +59,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Failed to parse user from localStorage", error)
-      // Nếu có lỗi, đảm bảo các state và localStorage được dọn dẹp
       localStorage.clear()
       setUser(null)
     } finally {

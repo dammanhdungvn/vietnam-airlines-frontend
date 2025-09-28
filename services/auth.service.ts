@@ -13,6 +13,6 @@ import { ILoginPayload, ILoginResponse } from "@/types/auth.type"
  * @returns {Promise<ILoginResponse>} - Promise chứa dữ liệu trả về từ API, bao gồm access token và thông tin người dùng.
  */
 export const login = async (payload: ILoginPayload): Promise<ILoginResponse> => {
-  const { data } = await api.post("/auth/login", payload)
-  return data
+  const response = await api.post<ILoginResponse>("/auth/login", payload)
+  return response.data
 }
