@@ -18,145 +18,73 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
-
-interface LinkData {
-  id: number
-  tenLink: string
-  ghiChu: string
-  ngayTao: string
-  ngaySua: string
-  category: string
-}
+import { Stream } from "@/types/stream.type"
+import { createOrUpdateStream, deleteStream, getStreams } from "@/services/stream.service"
+import React, { useEffect } from "react"
 
 /**
  * Trang Quản lý link trực tuyến
  * Hiển thị danh sách các link trực tuyến với ghi chú và ngày tạo/sửa
  */
 export default function QuanLyLinkTrucTuyenPage() {
+  const [streams, setStreams] = useState<Stream[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [sortBy, setSortBy] = useState("tenLink")
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [sortBy, setSortBy] = useState("streamName")
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const itemsPerPage = 10
 
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedLink, setSelectedLink] = useState<LinkData | null>(null)
-  const [editFormData, setEditFormData] = useState({
-    tenLink: "",
-    ghiChu: "",
-    category: "",
+  const [selectedStream, setSelectedStream] = useState<Stream | null>(null)
+  const [formData, setFormData] = useState({
+    id: 0,
+    streamName: "",
+    streamUrl: "",
   })
 
-  const [danhSachLink, setDanhSachLink] = useState<LinkData[]>([
-    {
-      id: 1,
-      tenLink: "Link 1",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Meeting",
-    },
-    {
-      id: 2,
-      tenLink: "Link 2",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Document",
-    },
-    {
-      id: 3,
-      tenLink: "Link 3",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Meeting",
-    },
-    {
-      id: 4,
-      tenLink: "Link 4",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Resource",
-    },
-    {
-      id: 5,
-      tenLink: "Link 5",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Document",
-    },
-    {
-      id: 6,
-      tenLink: "Link 6",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Meeting",
-    },
-    {
-      id: 7,
-      tenLink: "Link 7",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Resource",
-    },
-    {
-      id: 8,
-      tenLink: "Link 8",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Document",
-    },
-    {
-      id: 9,
-      tenLink: "Link 9",
-      ghiChu: "Lorem ipsum triska blogg, lament. Vänat dedorad för lavis. Egorat nigt.",
-      ngayTao: "30/10/2025",
-      ngaySua: "30/10/2025",
-      category: "Meeting",
-    },
-  ])
+  // Hàm tải danh sách stream từ API
+  const fetchStreams = async () => {
+    try {
+      const data = await getStreams()
+      setStreams(data)
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách link.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  useEffect(() => {
+    fetchStreams()
+  }, [])
 
   const filteredData = useMemo(() => {
-    let filtered = danhSachLink
+    let filtered = streams
 
     // Lọc theo search term
     if (searchTerm) {
-      filtered = filtered.filter(
+      filtered = streams.filter(
         (item) =>
-          item.tenLink.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.ghiChu.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.category.toLowerCase().includes(searchTerm.toLowerCase()),
+          item.streamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.streamUrl.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
-    if (selectedFilters.length > 0) {
-      filtered = filtered.filter((item) => selectedFilters.includes(item.category))
-    }
-
-    // Sắp xếp theo sortBy
-    filtered.sort((a, b) => {
-      if (sortBy === "tenLink") return a.tenLink.localeCompare(b.tenLink)
-      if (sortBy === "ghiChu") return a.ghiChu.localeCompare(b.ghiChu)
-      if (sortBy === "ngayTao") return a.ngayTao.localeCompare(b.ngayTao)
-      if (sortBy === "category") return a.category.localeCompare(b.category)
+    // Sắp xếp theo sortBy bằng cách tạo một bản sao của mảng để tránh thay đổi state gốc
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "streamName") return a.streamName.localeCompare(b.streamName)
+      if (sortBy === "streamUrl") return a.streamUrl.localeCompare(b.streamUrl)
       return 0
     })
-
-    return filtered
-  }, [searchTerm, selectedFilters, sortBy, danhSachLink])
+  }, [searchTerm, sortBy, streams])
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -167,69 +95,73 @@ export default function QuanLyLinkTrucTuyenPage() {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
   }
 
-  const toggleFilter = (filter: string) => {
-    setSelectedFilters((prev) => (prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]))
-    setCurrentPage(1)
-  }
-
-  const removeFilter = (filter: string) => {
-    setSelectedFilters((prev) => prev.filter((f) => f !== filter))
-    setCurrentPage(1)
-  }
-
-  const handleEdit = (link: LinkData) => {
-    setSelectedLink(link)
-    setEditFormData({
-      tenLink: link.tenLink,
-      ghiChu: link.ghiChu,
-      category: link.category,
+  const handleAddNew = () => {
+    setSelectedStream(null)
+    setFormData({
+      id: 0,
+      streamName: "",
+      streamUrl: "",
     })
-    setIsEditDialogOpen(true)
+    setIsModalOpen(true)
   }
 
-  const handleDelete = (link: LinkData) => {
-    setSelectedLink(link)
+  const handleEdit = (stream: Stream) => {
+    setSelectedStream(stream)
+    setFormData({
+      id: stream.id,
+      streamName: stream.streamName,
+      streamUrl: stream.streamUrl,
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleDelete = (stream: Stream) => {
+    setSelectedStream(stream)
     setIsDeleteDialogOpen(true)
   }
 
-  const confirmEdit = () => {
-    if (!selectedLink) return
+  const confirmSubmit = async () => {
+    try {
+      // Khi tạo mới, không gửi `id` trong payload. Backend sẽ tự tạo.
+      const payload =
+        formData.id === 0
+          ? { streamName: formData.streamName, streamUrl: formData.streamUrl }
+          : formData
 
-    const updatedDanhSach = danhSachLink.map((link) =>
-      link.id === selectedLink.id
-        ? {
-            ...link,
-            tenLink: editFormData.tenLink,
-            ghiChu: editFormData.ghiChu,
-            category: editFormData.category,
-            ngaySua: new Date().toLocaleDateString("vi-VN"),
-          }
-        : link,
-    )
-
-    setDanhSachLink(updatedDanhSach)
-    setIsEditDialogOpen(false)
-    setSelectedLink(null)
-
-    toast({
-      title: "Cập nhật thành công",
-      description: `Đã cập nhật thông tin link ${editFormData.tenLink}`,
-    })
+      await createOrUpdateStream(payload)
+      setIsModalOpen(false)
+      fetchStreams() // Tải lại dữ liệu
+      toast({
+        title: "Thành công",
+        description: `Đã ${formData.id ? "cập nhật" : "tạo mới"} link thành công.`,
+      })
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể ${formData.id ? "cập nhật" : "tạo mới"} link.`,
+        variant: "destructive",
+      })
+    }
   }
 
-  const confirmDelete = () => {
-    if (!selectedLink) return
+  const confirmDelete = async () => {
+    if (!selectedStream) return
 
-    const updatedDanhSach = danhSachLink.filter((link) => link.id !== selectedLink.id)
-    setDanhSachLink(updatedDanhSach)
-    setIsDeleteDialogOpen(false)
-    setSelectedLink(null)
-
-    toast({
-      title: "Xóa thành công",
-      description: `Đã xóa link ${selectedLink.tenLink}`,
-      variant: "destructive",
-    })
+    try {
+      await deleteStream(selectedStream.id)
+      setIsDeleteDialogOpen(false)
+      fetchStreams() // Tải lại dữ liệu
+      toast({
+        title: "Xóa thành công",
+        description: `Đã xóa link ${selectedStream.streamName}`,
+      })
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể xóa link ${selectedStream.streamName}.`,
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -240,70 +172,27 @@ export default function QuanLyLinkTrucTuyenPage() {
           <h1 className="text-2xl font-bold text-gray-900">Quản lý link trực tuyến</h1>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
+          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={handleAddNew}>
             <Plus className="w-4 h-4 mr-2" />
-            Thêm link
+            Thêm link mới
           </Button>
         </div>
       </div>
 
       <div className="flex items-center space-x-4 mb-6">
-        {selectedFilters.map((filter) => (
-          <Badge key={filter} variant="secondary" className="px-3 py-1">
-            {filter}
-            <button onClick={() => removeFilter(filter)} className="ml-2 text-gray-500 hover:text-gray-700">
-              ×
-            </button>
-          </Badge>
-        ))}
-        <DropdownMenu open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
-              More filters
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            <DropdownMenuCheckboxItem
-              checked={selectedFilters.includes("Meeting")}
-              onCheckedChange={() => toggleFilter("Meeting")}
-            >
-              Meeting
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={selectedFilters.includes("Document")}
-              onCheckedChange={() => toggleFilter("Document")}
-            >
-              Document
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={selectedFilters.includes("Resource")}
-              onCheckedChange={() => toggleFilter("Resource")}
-            >
-              Resource
-            </DropdownMenuCheckboxItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
         <div className="flex items-center space-x-2 ml-auto">
           <select
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <option value="tenLink">Tên link</option>
-            <option value="ghiChu">Ghi chú</option>
-            <option value="ngayTao">Ngày tạo</option>
-            <option value="category">Danh mục</option>
+            <option value="streamName">Tên link</option>
+            <option value="streamUrl">URL</option>
           </select>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Tìm kiếm"
+              placeholder="Tìm kiếm theo tên hoặc URL"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value)
@@ -325,13 +214,7 @@ export default function QuanLyLinkTrucTuyenPage() {
                   Tên link
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ghi chú
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày tạo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày sửa
+                  URL
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thao tác
@@ -339,25 +222,30 @@ export default function QuanLyLinkTrucTuyenPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentItems.map((link, index) => (
-                <tr key={link.id} className="hover:bg-gray-50">
+              {currentItems.map((stream, index) => (
+                <tr key={stream.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <span className="mr-4 text-sm text-gray-500">{startIndex + index + 1}</span>
-                      <span className="text-sm font-medium text-gray-900">{link.tenLink}</span>
+                      <span className="text-sm font-medium text-gray-900">{stream.streamName}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900 max-w-md">
-                    <div className="truncate">{link.ghiChu}</div>
+                    <a
+                      href={stream.streamUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate text-blue-600 hover:underline"
+                    >
+                      Truy cập
+                    </a>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{link.ngayTao}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{link.ngaySua}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(link)}
+                        onClick={() => handleDelete(stream)}
                         className="text-red-600 hover:text-red-800 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -365,7 +253,7 @@ export default function QuanLyLinkTrucTuyenPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEdit(link)}
+                        onClick={() => handleEdit(stream)}
                         className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                       >
                         <Edit className="w-4 h-4" />
@@ -440,72 +328,57 @@ export default function QuanLyLinkTrucTuyenPage() {
         </div>
       </div>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      {/* Modal Thêm/Sửa */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Sửa thông tin link</DialogTitle>
-            <DialogDescription>Cập nhật thông tin link {selectedLink?.tenLink}</DialogDescription>
+            <DialogTitle>{selectedStream ? "Sửa thông tin link" : "Thêm link mới"}</DialogTitle>
+            <DialogDescription>
+              {selectedStream ? `Cập nhật thông tin cho "${selectedStream.streamName}"` : "Nhập thông tin link mới."}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tenLink" className="text-right">
+              <Label htmlFor="streamName" className="text-right">
                 Tên link
               </Label>
               <Input
-                id="tenLink"
-                value={editFormData.tenLink}
-                onChange={(e) => setEditFormData({ ...editFormData, tenLink: e.target.value })}
+                id="streamName"
+                value={formData.streamName}
+                onChange={(e) => setFormData({ ...formData, streamName: e.target.value })}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Danh mục
+              <Label htmlFor="streamUrl" className="text-right">
+                URL
               </Label>
-              <Select
-                value={editFormData.category}
-                onValueChange={(value) => setEditFormData({ ...editFormData, category: value })}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Chọn danh mục" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Meeting">Meeting</SelectItem>
-                  <SelectItem value="Document">Document</SelectItem>
-                  <SelectItem value="Resource">Resource</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="ghiChu" className="text-right">
-                Ghi chú
-              </Label>
-              <Textarea
-                id="ghiChu"
-                value={editFormData.ghiChu}
-                onChange={(e) => setEditFormData({ ...editFormData, ghiChu: e.target.value })}
+              <Input
+                id="streamUrl"
+                value={formData.streamUrl}
+                onChange={(e) => setFormData({ ...formData, streamUrl: e.target.value })}
                 className="col-span-3"
-                rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={confirmEdit} className="bg-orange-500 hover:bg-orange-600">
-              Lưu thay đổi
+            <Button onClick={confirmSubmit} className="bg-orange-500 hover:bg-orange-600">
+              {selectedStream ? "Lưu thay đổi" : "Tạo mới"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Modal Xóa */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Xác nhận xóa</DialogTitle>
             <DialogDescription>
-              Bạn có chắc chắn muốn xóa link {selectedLink?.tenLink}? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa link "{selectedStream?.streamName}"? Hành động này không thể hoàn tác.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
