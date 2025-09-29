@@ -328,9 +328,9 @@ export default function DangKyHoPage() {
 
       // seatInfo: ưu tiên ghế mới nếu có; ngược lại dùng ghế cũ (nếu có)
       const mergedSeatInfo = selectedSeat
-        ? { seatNumber: selectedSeat.seatNumber, paidPrice: selectedSeat.basePrice }
+        ? { seatNumber: selectedSeat.seatNumber, paidPrice: selectedSeat.basePrice ?? 0 }
         : (selectedCustomer.seatInfo
-            ? { seatNumber: selectedCustomer.seatInfo.seatNumber, paidPrice: selectedCustomer.seatInfo.paidPrice }
+            ? { seatNumber: selectedCustomer.seatInfo.seatNumber, paidPrice: selectedCustomer.seatInfo.paidPrice ?? 0 }
             : null)
 
       // DỮ LIỆU ĐẦY ĐỦ: lấy dữ liệu cũ làm baseline, override những trường người dùng chỉnh
@@ -341,6 +341,7 @@ export default function DangKyHoPage() {
         phone: selectedCustomer.phone,
         gender: selectedCustomer.gender,
         status: selectedCustomer.status,
+        isVip: selectedCustomer.isVip,
         seatInfo: mergedSeatInfo,
         items: itemsPayload,
       }
@@ -454,6 +455,10 @@ export default function DangKyHoPage() {
                 first: page === 0,
                 last: page >= Math.max(1, Math.ceil(base.length / clientSize)) - 1,
               })
+            }}
+            onSearch={(keyword) => {
+              setSearchTermFull(keyword)
+              setClientPage(0)
             }}
           />
         )

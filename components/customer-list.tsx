@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,13 +16,14 @@ interface CustomerListProps {
   selectedCustomer: Person | null
   onSelect: (customer: Person) => void
   onPageChange: (page: number) => void
+  onSearch?: (keyword: string) => void
 }
 
 /**
  * Component danh sách khách hàng
  * Hiển thị danh sách khách hàng từ API, có phân trang, tìm kiếm và trạng thái loading.
  */
-export function CustomerList({ data, isLoading, selectedCustomer, onSelect, onPageChange }: CustomerListProps) {
+export function CustomerList({ data, isLoading, selectedCustomer, onSelect, onPageChange, onSearch }: CustomerListProps) {
   const [searchTerm, setSearchTerm] = useState("")
 
   const filteredCustomers = useMemo(() => {
@@ -35,6 +36,13 @@ export function CustomerList({ data, isLoading, selectedCustomer, onSelect, onPa
         customer.position.toLowerCase().includes(searchTerm.toLowerCase()),
     )
   }, [searchTerm, data])
+
+  // Debounce chuyển keyword ra ngoài cho parent (nếu có)
+  useEffect(() => {
+    if (!onSearch) return
+    const id = setTimeout(() => onSearch(searchTerm.trim()), 300)
+    return () => clearTimeout(id)
+  }, [searchTerm])
 
   const handleSelectCustomer = (customer: Person) => {
     onSelect(customer)
