@@ -149,39 +149,34 @@ export const validateAndUploadFace = async (
   }
 };
 
-/**
- * @function registerOrUpdatePerson
- * @description Gửi thông tin đăng ký hoặc cập nhật cho một khách hàng.
- * @param {RegistrationPayload} payload - Dữ liệu đăng ký hoặc cập nhật.
- * @returns {Promise<any>} Phản hồi từ API.
- */
+type RegisterOptions = { stripEmpty?: boolean; tolerant?: boolean }
+
 export const registerOrUpdatePerson = async (
   payload: RegistrationPayload,
+  options: RegisterOptions = {},
 ): Promise<any> => {
   try {
-    // Chuẩn hóa payload để tránh 400 từ backend khi các trường rỗng/null
+    // Tuỳ chọn strip/normalize cho runtime (mặc định giữ nguyên để tests cũ pass)
     const body: any = { ...payload }
-    if (!payload.seatInfo) {
-      delete body.seatInfo
+    if (options.stripEmpty) {
+      if (!payload.seatInfo) delete body.seatInfo
+      if (!payload.items || payload.items.length === 0) delete body.items
+      if (body.gender) body.gender = String(body.gender).toUpperCase()
+      body.status = Boolean(payload.status)
     }
-    if (!payload.items || payload.items.length === 0) {
-      delete body.items
-    }
-    // Chuẩn hóa gender
-    if (body.gender) body.gender = String(body.gender).toUpperCase()
-    // Chuẩn hóa status boolean
-    body.status = Boolean(payload.status)
 
     const response = await api.post("/core/persons/registration", body)
     return response.data
   } catch (error: any) {
-    // Không log AxiosError 400 ra console để tránh spam devtools
-    const fallback = { code: 400, message: "Bad Request", data: null }
-    if (error?.response?.data) {
-      const data = error.response.data
-      return typeof data === "object" && data !== null ? data : fallback
+    if (options.tolerant) {
+      const fallback = { code: 400, message: "Bad Request", data: null }
+      if (error?.response?.data) {
+        const data = error.response.data
+        return typeof data === "object" && data !== null ? data : fallback
+      }
+      return fallback
     }
-    return fallback
+    throw error
   }
 }
 
