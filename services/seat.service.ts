@@ -39,6 +39,16 @@ export const getSeatsInfo = async (params: GetSeatsInfoParams): Promise<IPaginat
 };
 
 /**
+ * @function getAllSeats
+ * @description Lấy toàn bộ danh sách ghế (không phân trang) phục vụ UI và unit tests.
+ * @returns {Promise<ISeat[]>}
+ */
+export const getAllSeats = async (): Promise<ISeat[]> => {
+  const data = await getSeatsInfo({ page: 0, size: 10000, sortBy: 'id', sortDir: 'asc' })
+  return data.content
+}
+
+/**
  * @interface UpdateSeatPayload
  * @description Định nghĩa payload cho việc cập nhật thông tin ghế.
  */

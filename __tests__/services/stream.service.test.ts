@@ -34,7 +34,7 @@ describe("Stream Service", () => {
   describe("getStreams", () => {
     it("should fetch all streams successfully", async () => {
       const mockStreams: Stream[] = [mockStream];
-      mockedApi.get.mockResolvedValue({ data: mockStreams });
+      mockedApi.get.mockResolvedValue({ data: { code: 200, message: 'OK', data: mockStreams } });
 
       const result = await getStreams();
 
@@ -50,7 +50,7 @@ describe("Stream Service", () => {
 
   describe("getStreamById", () => {
     it("should fetch a single stream by ID successfully", async () => {
-      mockedApi.get.mockResolvedValue({ data: mockStream });
+      mockedApi.get.mockResolvedValue({ data: { code: 200, message: 'OK', data: mockStream } });
 
       const result = await getStreamById(1);
 
@@ -72,7 +72,7 @@ describe("Stream Service", () => {
       };
       const createdStream = { id: 2, ...newStreamData };
 
-      mockedApi.post.mockResolvedValue({ data: createdStream });
+      mockedApi.post.mockResolvedValue({ data: { code: 200, message: 'OK', data: createdStream } });
 
       const result = await createOrUpdateStream(newStreamData);
 
@@ -81,7 +81,7 @@ describe("Stream Service", () => {
     });
 
     it("should update a stream successfully", async () => {
-      mockedApi.post.mockResolvedValue({ data: mockStream });
+      mockedApi.post.mockResolvedValue({ data: { code: 200, message: 'OK', data: mockStream } });
 
       const result = await createOrUpdateStream(mockStream);
 

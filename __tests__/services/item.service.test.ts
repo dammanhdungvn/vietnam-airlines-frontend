@@ -122,7 +122,11 @@ describe("Item Service", () => {
       const result = await createItem(newItemPayload)
 
       // Assert
-      expect(mockedApi.post).toHaveBeenCalledWith("/items", newItemPayload)
+      expect(mockedApi.post).toHaveBeenCalled()
+      const [url, body, config] = mockedApi.post.mock.calls[0]
+      expect(url).toBe("/items")
+      expect(body).toBeInstanceOf(FormData)
+      expect(config).toEqual({ headers: { "Content-Type": "multipart/form-data" } })
       expect(result).toEqual(mockCreatedItem)
     })
 
@@ -138,7 +142,7 @@ describe("Item Service", () => {
 
       // Act & Assert
       await expect(createItem(newItemPayload)).rejects.toThrow(errorMessage)
-      expect(mockedApi.post).toHaveBeenCalledWith("/items", newItemPayload)
+      expect(mockedApi.post).toHaveBeenCalled()
     })
   })
 
@@ -163,7 +167,11 @@ describe("Item Service", () => {
       const result = await updateItem(updatePayload)
 
       // Assert
-      expect(mockedApi.post).toHaveBeenCalledWith(`/items`, updatePayload)
+      expect(mockedApi.post).toHaveBeenCalled()
+      const [url, body, config] = mockedApi.post.mock.calls[0]
+      expect(url).toBe("/items")
+      expect(body).toBeInstanceOf(FormData)
+      expect(config).toEqual({ headers: { "Content-Type": "multipart/form-data" } })
       expect(result).toEqual(mockUpdatedItem)
     })
 
@@ -175,7 +183,7 @@ describe("Item Service", () => {
 
       // Act & Assert
       await expect(updateItem(updatePayload)).rejects.toThrow(errorMessage)
-      expect(mockedApi.post).toHaveBeenCalledWith(`/items`, updatePayload)
+      expect(mockedApi.post).toHaveBeenCalled()
     })
   })
 

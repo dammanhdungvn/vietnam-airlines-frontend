@@ -6,7 +6,7 @@
 
 import { getAllSeats } from '@/services/seat.service';
 import api from '@/lib/api';
-import { ISeat, SeatStatus, SeatType } from '@/types/seat.type';
+import { ISeat, SeatStatus, SeatType, ISeatResponse, IPaginatedData } from '@/types/seat.type';
 
 // Mock the api module
 jest.mock('@/lib/api');
@@ -46,12 +46,17 @@ describe('Seat Service', () => {
       },
     ];
 
-    const mockResponse = {
-      data: {
-        code: 200,
-        message: 'OK',
-        data: mockSeats,
-      },
+    const pageData: IPaginatedData<ISeat> = {
+      content: mockSeats,
+      page: 0,
+      size: mockSeats.length,
+      totalElements: mockSeats.length,
+      totalPages: 1,
+      first: true,
+      last: true,
+    };
+    const mockResponse: { data: ISeatResponse } = {
+      data: { code: 200, message: 'OK', data: pageData },
     };
 
     mockedApi.get.mockResolvedValue(mockResponse);
@@ -59,7 +64,7 @@ describe('Seat Service', () => {
     const result = await getAllSeats();
 
     expect(result).toEqual(mockSeats);
-    expect(mockedApi.get).toHaveBeenCalledWith('/seats');
+    expect(mockedApi.get).toHaveBeenCalledWith('/seats/info', { params: { page: 0, size: 10000, sortBy: 'id', sortDir: 'asc' } });
     expect(mockedApi.get).toHaveBeenCalledTimes(1);
   });
 
@@ -72,7 +77,7 @@ describe('Seat Service', () => {
     mockedApi.get.mockRejectedValue(new Error(errorMessage));
 
     await expect(getAllSeats()).rejects.toThrow(errorMessage);
-    expect(mockedApi.get).toHaveBeenCalledWith('/seats');
+    expect(mockedApi.get).toHaveBeenCalledWith('/seats/info', { params: { page: 0, size: 10000, sortBy: 'id', sortDir: 'asc' } });
     expect(mockedApi.get).toHaveBeenCalledTimes(1);
     expect(consoleErrorSpy).toHaveBeenCalledWith('Không thể lấy danh sách ghế:', expect.any(Error));
   });
@@ -82,12 +87,17 @@ describe('Seat Service', () => {
    * @description Kiểm tra việc xử lý khi API trả về danh sách ghế rỗng.
    */
   it('should handle empty seats array', async () => {
-    const mockResponse = {
-      data: {
-        code: 200,
-        message: 'OK',
-        data: [],
-      },
+    const pageData: IPaginatedData<ISeat> = {
+      content: [],
+      page: 0,
+      size: 0,
+      totalElements: 0,
+      totalPages: 0,
+      first: true,
+      last: true,
+    };
+    const mockResponse: { data: ISeatResponse } = {
+      data: { code: 200, message: 'OK', data: pageData },
     };
 
     mockedApi.get.mockResolvedValue(mockResponse);
@@ -95,7 +105,7 @@ describe('Seat Service', () => {
     const result = await getAllSeats();
 
     expect(result).toEqual([]);
-    expect(mockedApi.get).toHaveBeenCalledWith('/seats');
+    expect(mockedApi.get).toHaveBeenCalledWith('/seats/info', { params: { page: 0, size: 10000, sortBy: 'id', sortDir: 'asc' } });
     expect(mockedApi.get).toHaveBeenCalledTimes(1);
   });
 
@@ -123,24 +133,29 @@ describe('Seat Service', () => {
         id: 3,
         seatNumber: 'C1',
         type: SeatType.FREE,
-        basePrice: null,
+        basePrice: 0,
         status: SeatStatus.AVAILABLE,
       },
       {
         id: 4,
         seatNumber: 'D1',
         type: SeatType.BLOCK,
-        basePrice: null,
+        basePrice: 0,
         status: SeatStatus.AVAILABLE,
       },
     ];
 
-    const mockResponse = {
-      data: {
-        code: 200,
-        message: 'OK',
-        data: mockSeats,
-      },
+    const pageData: IPaginatedData<ISeat> = {
+      content: mockSeats,
+      page: 0,
+      size: mockSeats.length,
+      totalElements: mockSeats.length,
+      totalPages: 1,
+      first: true,
+      last: true,
+    };
+    const mockResponse: { data: ISeatResponse } = {
+      data: { code: 200, message: 'OK', data: pageData },
     };
 
     mockedApi.get.mockResolvedValue(mockResponse);
