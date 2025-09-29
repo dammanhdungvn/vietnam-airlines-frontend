@@ -1,5 +1,5 @@
 "use client"
-
+import logoImage from "../public/image/logo.jpg";
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -82,12 +82,11 @@ export function Sidebar() {
       {/* Logo Vietnam Airlines */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-            <Plane className="w-5 h-5 text-white" />
-          </div>
+
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Vietnam Airlines</h1>
-            <p className="text-sm text-gray-500">Hệ thống quản lý</p>
+          <div className="w-50">
+              <img src={logoImage.src} alt="logo" />
+            </div>
           </div>
         </div>
       </div>

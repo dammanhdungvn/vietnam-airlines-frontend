@@ -11,8 +11,8 @@ import { toast } from "sonner"
 import { login } from "@/services/auth.service"
 import { ILoginPayload } from "@/types/auth.type"
 import { useAuth } from "@/context/AuthContext"
-import planeImage from "../../public/vietnam-airlines-plane-flying-in-blue-sky.jpg";
-
+import planeImage from "../../public/image/plane.jpg";
+import logoImage from "../../public/image/logo.jpg";
 /**
  * @fileoverview Trang Đăng nhập của hệ thống.
  * Chịu trách nhiệm hiển thị form, thu thập thông tin, xác thực đầu vào
@@ -70,18 +70,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex">
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
           <div className="flex items-center space-x-2 mb-8">
             <div className="flex items-center">
-              {/* Logo hoa sen vàng */}
-              <div className="w-8 h-8 mr-2">
-                <svg viewBox="0 0 24 24" className="w-full h-full text-yellow-500 fill-current">
-                  <path d="M12 2C8.5 2 6 4.5 6 8c0 2.5 1.5 4.5 3 6l3 3 3-3c1.5-1.5 3-3.5 3-6 0-3.5-2.5-6-6-6zm0 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
-                </svg>
+              <div className="w-70">
+                <img src={logoImage.src} alt="logo" />
               </div>
-              <span className="text-lg font-semibold text-blue-600">Vietnam Airlines</span>
             </div>
           </div>
 
@@ -130,33 +126,13 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="flex-1 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center p-8 relative overflow-hidden">
-        {/* Máy bay Vietnam Airlines */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-3/4 -scale-x-100">
-          <img
-            src={planeImage.src}
-            alt="Vietnam Airlines Aircraft"
-            className="w-100 h-auto opacity-90 "
-          />
-        </div>
-
-        {/* Logo và text chính */}
-        <div className="text-center text-white z-10">
-          {/* Logo hoa sen lớn */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16">
-              <svg viewBox="0 0 100 100" className="w-full h-full text-yellow-400 fill-current">
-                <path d="M50 10c-5 0-10 2-15 5-3 2-5 5-5 8 0 3 2 6 5 8l15 15 15-15c3-2 5-5 5-8 0-3-2-6-5-8-5-3-10-5-15-5z" />
-                <path d="M35 35c-3 2-5 5-5 8 0 3 2 6 5 8l15 15 15-15c3-2 5-5 5-8 0-3-2-6-5-8l-15-15-15 15z" />
-                <path d="M35 60c-3 2-5 5-5 8 0 3 2 6 5 8l15 15 15-15c3-2 5-5 5-8 0-3-2-6-5-8l-15-15-15 15z" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Text Vietnam Airlines */}
-          <h1 className="text-4xl font-bold tracking-wide">Vietnam Airlines</h1>
-        </div>
-      </div>
+    <div className="flex-1 h-full w-full bg-gradient-to-br flex items-center justify-center relative overflow-hidden">
+      <img 
+        src={planeImage.src} 
+        alt="plane" 
+        className=" w-full h-full object-cover" 
+      />
+    </div>
     </div>
   )
 }
