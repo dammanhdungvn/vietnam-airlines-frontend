@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,15 @@ import { CustomerList } from "@/components/customer-list"
 import { SeatMapInteractive } from "@/components/seat-map-interactive"
 import { FoodComboModal } from "@/components/food-combo-modal"
 import { SuccessModal } from "@/components/success-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { User, Info, Plane, Utensils, Minus, Plus, RefreshCw } from "lucide-react"
 import {
   getPersonsPaginated,
@@ -71,6 +80,7 @@ export default function DangKyHoPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [personsResponse, setPersonsResponse] = useState<PaginatedApiResponse<Person> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<{ title: string; message: string } | null>(null)
 
   // Remove hardcoded combos
   
@@ -158,6 +168,17 @@ export default function DangKyHoPage() {
     }
   };
 
+  const totalItemPrice = useMemo(() => {
+    let total = 0;
+    for (const [itemId, quantity] of selectedItems.entries()) {
+        const item = items.find(i => i.id === itemId);
+        if (item) {
+            total += item.price * quantity;
+        }
+    }
+    return total;
+  }, [selectedItems, items]);
+
 
   // Các bước trong quy trình đăng ký
   const steps = [
@@ -194,16 +215,13 @@ export default function DangKyHoPage() {
       setIsUploadingFace(true);
       try {
         const response = await validateAndUploadFace(selectedCustomer.personId, faceIdImage);
-        if (response.code === 200) {
-          toast({ title: "Xác thực khuôn mặt thành công" })
-        } else {
-          toast({ title: "Xác thực khuôn mặt thất bại", description: response.message, variant: "destructive" })
-          setIsUploadingFace(false)
+        if (response.code !== 200) {
+          setError({ title: "Xác thực khuôn mặt thất bại", message: response.message })
           return // Stop moving to next step
         }
+        toast({ title: "Xác thực khuôn mặt thành công" })
       } catch (error) {
-        toast({ title: "Lỗi", description: "Có lỗi xảy ra khi tải ảnh lên.", variant: "destructive" })
-        setIsUploadingFace(false)
+        setError({ title: "Lỗi", message: "Có lỗi xảy ra khi tải ảnh lên." })
         return // Stop moving to next step
       } finally {
         setIsUploadingFace(false)
@@ -254,18 +272,23 @@ export default function DangKyHoPage() {
         if (response.code === 200) {
           setShowSuccessModal(true);
         } else {
-           toast({
+           let errorMessage = response.message || "Dữ liệu không hợp lệ.";
+           if (response.data && typeof response.data === 'object') {
+                const validationErrors = Object.values(response.data).join('\n');
+                if (validationErrors) {
+                    errorMessage = `${errorMessage}\n${validationErrors}`;
+                }
+            }
+           setError({
             title: "Đăng ký thất bại",
-            description: response.message || "Dữ liệu không hợp lệ.",
-            variant: "destructive",
+            message: errorMessage,
           });
         }
       } catch (error: any) {
         const errorMessage = error.response?.data?.message || "Có lỗi xảy ra khi đăng ký."
-        toast({
+        setError({
           title: "Lỗi",
-          description: errorMessage,
-          variant: "destructive",
+          message: errorMessage,
         });
       }
     }
@@ -468,6 +491,16 @@ export default function DangKyHoPage() {
                 ))}
               </div>
             )}
+            {totalItemPrice > 0 && (
+              <div className="mt-8 pt-4 border-t-2 border-dashed">
+                <div className="flex justify-between items-center max-w-sm mx-auto">
+                  <h3 className="text-lg font-semibold">Tổng tiền sản phẩm:</h3>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {totalItemPrice.toLocaleString('vi-VN')}đ
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )
       default:
@@ -515,6 +548,20 @@ export default function DangKyHoPage() {
         title="Đăng ký thành công"
         message="Cảm ơn bạn đã hoàn thành đăng ký!"
       />
+      
+      <AlertDialog open={!!error} onOpenChange={() => setError(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{error?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {error?.message.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setError(null)}>Đã hiểu</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
