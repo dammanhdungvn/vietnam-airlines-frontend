@@ -98,14 +98,20 @@ export default function QuanLyTaiLieuPage() {
   }, [searchTerm, documents])
 
   const getFileExtension = (filePath: string): string => {
-    return filePath.split(".").pop()?.toUpperCase() || "FILE"
+    return filePath.split(".").pop()?.toLowerCase() || "file"
   }
 
   const getFileIcon = (filePath: string) => {
     const extension = getFileExtension(filePath)
+    const iconStyles = defaultStyles[extension as keyof typeof defaultStyles]
+    
     return (
       <div className="w-8 h-8">
-        <FileIcon extension={extension} {...defaultStyles[extension as any]} />
+        {iconStyles ? (
+          <FileIcon extension={extension} {...iconStyles} />
+        ) : (
+          <FileText className="w-full h-full text-gray-400" />
+        )}
       </div>
     )
   }

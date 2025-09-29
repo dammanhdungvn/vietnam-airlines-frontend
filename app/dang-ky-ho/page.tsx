@@ -13,6 +13,12 @@ import { CustomerList } from "@/components/customer-list"
 import { SeatMapInteractive } from "@/components/seat-map-interactive"
 import { FoodComboModal } from "@/components/food-combo-modal"
 import { SuccessModal } from "@/components/success-modal"
+
+import { useToast } from "@/hooks/use-toast";
+import { ISeat } from "@/types/seat.type"
+import { getSeatsInfo } from "@/services/seat.service"
+import { IItem, IItemData } from "@/types/item.type"
+import { getItems } from "@/services/item.service"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,11 +40,6 @@ import {
   Person,
   RegistrationPayload,
 } from "@/types/person.type"
-import { useToast } from "@/hooks/use-toast"
-import { ISeat } from "@/types/seat.type"
-import { getSeatsInfo } from "@/services/seat.service"
-import { IItem, IItemData } from "@/types/item.type"
-import { getItems } from "@/services/item.service"
 
 interface FoodCombo {
   id: number
@@ -77,6 +78,8 @@ export default function DangKyHoPage() {
   const [items, setItems] = useState<IItem[]>([])
   const [selectedItems, setSelectedItems] = useState<Map<number, number>>(new Map()) // Map<itemId, quantity>
   const [isLoadingItems, setIsLoadingItems] = useState(false)
+  const [combos, setCombos] = useState<FoodCombo[]>([]);
+  const [selectedCombo, setSelectedCombo] = useState<FoodCombo | null>(null);
   
   const [showComboModal, setShowComboModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)

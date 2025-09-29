@@ -66,7 +66,6 @@ export default function ChiTietKhachMoiPage() {
           setPerson(data)
           // Initialize form data for editing
           setFormData({
-            personId: data.personId,
             email: data.email,
             fullName: data.fullName,
             phone: data.phone,
