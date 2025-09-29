@@ -121,6 +121,17 @@ export default function DangKyHoPage() {
     }
   }, [currentStep])
 
+  // Prefill ảnh khuôn mặt từ khách đã chọn (nếu có)
+  useEffect(() => {
+    if (selectedCustomer?.avatarUrl) {
+      const raw = selectedCustomer.avatarUrl
+      const isDataUrl = raw.startsWith("data:")
+      const isHttpUrl = raw.startsWith("http://") || raw.startsWith("https://")
+      const normalized = isDataUrl || isHttpUrl ? raw : `data:image/jpeg;base64,${raw}`
+      setFaceIdImageUrl(normalized)
+    }
+  }, [selectedCustomer])
+
   /**
    * @function fetchSeats
    * @description Lấy dữ liệu tất cả các ghế cho sơ đồ.
@@ -212,19 +223,26 @@ export default function DangKyHoPage() {
         toast({ title: "Bạn phải đồng ý với điều khoản", variant: "destructive" })
         return
       }
-      if (!faceIdImage || !selectedCustomer) {
+      if (!selectedCustomer) {
+        toast({ title: "Không tìm thấy thông tin khách hàng", variant: "destructive" })
+        return
+      }
+      const hasExistingImage = Boolean(selectedCustomer.avatarUrl)
+      if (!faceIdImage && !hasExistingImage) {
         toast({ title: "Vui lòng tải lên ảnh Face ID", variant: "destructive" })
         return
       }
 
       setIsUploadingFace(true);
       try {
-        const response = await validateAndUploadFace(selectedCustomer.personId, faceIdImage);
-        if (response.code !== 200) {
-          setError({ title: "Xác thực khuôn mặt thất bại", message: response.message })
-          return // Stop moving to next step
+        if (faceIdImage) {
+          const response = await validateAndUploadFace(selectedCustomer.personId, faceIdImage);
+          if (response.code !== 200) {
+            setError({ title: "Xác thực khuôn mặt thất bại", message: response.message })
+            return // Stop moving to next step
+          }
+          toast({ title: "Xác thực khuôn mặt thành công" })
         }
-        toast({ title: "Xác thực khuôn mặt thành công" })
       } catch (error) {
         setError({ title: "Lỗi", message: "Có lỗi xảy ra khi tải ảnh lên." })
         return // Stop moving to next step
@@ -413,7 +431,7 @@ export default function DangKyHoPage() {
                       alt="Face ID"
                       className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
                     />
-                    <p className="text-gray-700 font-medium">Ảnh Face ID đã chọn</p>
+                    <p className="text-gray-700 font-medium">Ảnh Face ID hiện tại</p>
                     <p className="text-sm text-gray-500 mt-1">Click để thay đổi</p>
                   </div>
                 ) : (
@@ -514,7 +532,10 @@ export default function DangKyHoPage() {
 
   const isNextButtonDisabled = () => {
     if (currentStep === 1 && !selectedCustomer) return true;
-    if (currentStep === 2 && (!hasAgreed || !faceIdImage)) return true;
+    if (currentStep === 2) {
+      const hasAnyImage = Boolean(faceIdImage) || Boolean(selectedCustomer?.avatarUrl)
+      if (!hasAgreed || !hasAnyImage) return true
+    }
     if (currentStep === 3 && !selectedSeat) return true;
     return isUploadingFace;
   }
