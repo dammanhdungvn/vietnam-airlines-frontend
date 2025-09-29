@@ -39,12 +39,27 @@ export function SeatMapInteractive({ seats, selectedSeat, onSelectSeat, isLoadin
     }))
   }, [seats])
 
+  // 3 blocks: 1-9, 10-18, 19-27
+  const blocks = useMemo(() => {
+    const inRange = (num: number, from: number, to: number) => num >= from && num <= to
+    const toBlock = (from: number, to: number) =>
+      seatRows.map(({ row, seats }) => ({
+        row,
+        seats: seats.filter((s) => inRange(parseInt(s.seatNumber.substring(1), 10), from, to))
+      }))
+    return [toBlock(1, 9), toBlock(10, 18), toBlock(19, 27)]
+  }, [seatRows])
+
   const getSeatStyle = (seat: ISeat) => {
     if (selectedSeat?.id === seat.id) {
       return "bg-orange-500 text-white border-orange-600 ring-2 ring-orange-500"
     }
     if (seat.isBooked) {
       return "bg-slate-700 text-white cursor-not-allowed"
+    }
+    // Row A blocked
+    if (seat.seatNumber.startsWith("A")) {
+      return "bg-red-200 border-red-300 cursor-not-allowed"
     }
     switch (seat.type) {
       case SeatType.VIP:
@@ -70,13 +85,22 @@ export function SeatMapInteractive({ seats, selectedSeat, onSelectSeat, isLoadin
 
   const handleSeatClick = (seat: ISeat) => {
     if (seat.isBooked) return;
-    
+    if (seat.seatNumber.startsWith("A")) return; // blocked row A
+
     if (selectedSeat?.id === seat.id) {
-      onSelectSeat(null); // Deselect if clicked again
+      onSelectSeat(null); // Deselect
     } else {
       onSelectSeat(seat);
     }
   };
+
+  const getTooltip = (seat: ISeat) => {
+    // Demo: ghế A1 hiển thị thông tin VIP
+    if (seat.seatNumber === "A1") {
+      return "Reserved for Mr. Đặng Ngọc Hòa - Chủ tịch HĐQT Vietnam Airlines.";
+    }
+    return seat.seatNumber;
+  }
 
   if (isLoading) {
     return (
@@ -90,7 +114,7 @@ export function SeatMapInteractive({ seats, selectedSeat, onSelectSeat, isLoadin
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <div className="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-2 rounded-full mb-4">
           <span className="font-medium tracking-wider">SÂN KHẤU</span>
@@ -98,28 +122,39 @@ export function SeatMapInteractive({ seats, selectedSeat, onSelectSeat, isLoadin
       </div>
 
       <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <div className="space-y-3">
-          {seatRows.map(({ row, seats }) => (
-            <div key={row} className="flex items-center justify-center space-x-2">
-              <div className="w-8 text-center font-medium text-gray-700">{row}</div>
-              <div className="flex flex-wrap gap-1">
-                {seats.map((seat) => (
-                  <button
-                    key={seat.id}
-                    onClick={() => handleSeatClick(seat)}
-                    disabled={seat.isBooked}
-                    className={cn(
-                      "w-8 h-8 border rounded flex items-center justify-center text-xs font-medium transition-colors",
-                      getSeatStyle(seat),
-                    )}
-                    title={seat.seatNumber}
-                  >
-                    {getSeatIcon(seat) || seat.seatNumber.substring(1)}
-                  </button>
+        <div className="flex items-start justify-between gap-6">
+          {blocks.map((block, blockIdx) => (
+            <div key={blockIdx} className="flex-1 min-w-[320px]">
+              <div className="space-y-3">
+                {block.map(({ row, seats }) => (
+                  <div key={row} className="flex items-center justify-center space-x-2">
+                    <div className="w-8 text-center font-medium text-gray-700">{row}</div>
+                    <div className="flex flex-nowrap gap-1">
+                      {seats.map((seat) => (
+                        <button
+                          key={seat.id}
+                          onClick={() => handleSeatClick(seat)}
+                          disabled={seat.isBooked || seat.seatNumber.startsWith("A")}
+                          className={cn(
+                            "w-8 h-8 border rounded flex items-center justify-center text-xs font-medium transition-colors",
+                            getSeatStyle(seat),
+                          )}
+                          title={getTooltip(seat)}
+                        >
+                          {getSeatIcon(seat) || seat.seatNumber.substring(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
           ))}
+        </div>
+        {/* Hai cửa vào nằm giữa các khối */}
+        <div className="flex justify-around mt-4">
+          <span className="inline-block bg-rose-100 text-rose-800 text-xs px-3 py-1 rounded border border-rose-200">Cửa vào</span>
+          <span className="inline-block bg-rose-100 text-rose-800 text-xs px-3 py-1 rounded border border-rose-200">Cửa vào</span>
         </div>
 
         <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-8 text-sm">
@@ -142,8 +177,8 @@ export function SeatMapInteractive({ seats, selectedSeat, onSelectSeat, isLoadin
             <span>Đã đặt</span>
           </div>
            <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-orange-500 border border-orange-600 rounded"></div>
-            <span>Đang chọn</span>
+            <div className="w-4 h-4 bg-red-200 border border-red-300 rounded"></div>
+            <span>Block (Hạng A)</span>
           </div>
         </div>
       </div>

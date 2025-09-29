@@ -43,15 +43,28 @@ export function SeatMap({ seats }: SeatMapProps) {
     }))
   }, [seats])
 
+  // Chia thành 3 khối cột: 1-9, 10-18, 19-27
+  const blocks = useMemo(() => {
+    const inRange = (num: number, from: number, to: number) => num >= from && num <= to
+    const toBlock = (from: number, to: number) =>
+      seatRows.map(({ row, seats }) => ({
+        row,
+        seats: seats.filter((s) => inRange(parseInt(s.seatNumber.substring(1), 10), from, to))
+      }))
+    return [toBlock(1, 9), toBlock(10, 18), toBlock(19, 27)]
+  }, [seatRows])
+
   /**
    * @function getSeatStyle
    * @description Xác định style CSS cho ghế dựa trên trạng thái và loại.
-   * @param {ISeat} seat - Đối tượng ghế.
-   * @returns {string} Class CSS tương ứng.
    */
   const getSeatStyle = (seat: ISeat) => {
     if (seat.isBooked) {
       return "bg-slate-700 text-white cursor-not-allowed"
+    }
+    // Hàng A: không mở bán (hiển thị như BLOCK)
+    if (seat.seatNumber.startsWith("A")) {
+      return "bg-red-200 border-red-300"
     }
     switch (seat.type) {
       case SeatType.VIP:
@@ -61,7 +74,7 @@ export function SeatMap({ seats }: SeatMapProps) {
       case SeatType.FREE:
         return "bg-green-100 border-green-300"
       case SeatType.BLOCK:
-        return "bg-red-200 border-red-300" // Phân biệt ghế BLOCK nhưng không vô hiệu hóa
+        return "bg-red-200 border-red-300"
       default:
         return "bg-gray-100 border-gray-300"
     }
@@ -70,8 +83,6 @@ export function SeatMap({ seats }: SeatMapProps) {
   /**
    * @function getSeatIcon
    * @description Xác định icon hiển thị cho ghế.
-   * @param {ISeat} seat - Đối tượng ghế.
-   * @returns {JSX.Element | null} Icon component hoặc null.
    */
   const getSeatIcon = (seat: ISeat) => {
     if (seat.isBooked) {
@@ -84,35 +95,46 @@ export function SeatMap({ seats }: SeatMapProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <div className="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-2 rounded-full mb-4">
           <span className="font-medium tracking-wider">SÂN KHẤU</span>
         </div>
       </div>
 
-      {/* Sơ đồ ghế */}
+      {/* 3 khối ghế */}
       <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <div className="space-y-3">
-          {seatRows.map(({ row, seats }) => (
-            <div key={row} className="flex items-center justify-center space-x-2">
-              <div className="w-8 text-center font-medium text-gray-700">{row}</div>
-              <div className="flex flex-wrap gap-1">
-                {seats.map((seat) => (
-                  <div
-                    key={seat.id}
-                    className={cn(
-                      "w-8 h-8 border rounded flex items-center justify-center text-xs font-medium",
-                      getSeatStyle(seat),
-                    )}
-                    title={seat.seatNumber}
-                  >
-                    {getSeatIcon(seat) || seat.seatNumber}
+        <div className="flex items-start justify-between gap-6">
+          {blocks.map((block, blockIdx) => (
+            <div key={blockIdx} className="flex-1 min-w-[320px]">
+              <div className="space-y-3">
+                {block.map(({ row, seats }) => (
+                  <div key={row} className="flex items-center justify-center space-x-2">
+                    <div className="w-8 text-center font-medium text-gray-700">{row}</div>
+                    <div className="flex flex-nowrap gap-1">
+                      {seats.map((seat) => (
+                        <div
+                          key={seat.id}
+                          className={cn(
+                            "w-8 h-8 border rounded flex items-center justify-center text-xs font-medium",
+                            getSeatStyle(seat),
+                          )}
+                          title={seat.seatNumber}
+                        >
+                          {getSeatIcon(seat) || seat.seatNumber}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           ))}
+        </div>
+        {/* Hai cửa vào nằm giữa các khối */}
+        <div className="flex justify-around mt-4">
+          <span className="inline-block bg-rose-100 text-rose-800 text-xs px-3 py-1 rounded border border-rose-200">Cửa vào</span>
+          <span className="inline-block bg-rose-100 text-rose-800 text-xs px-3 py-1 rounded border border-rose-200">Cửa vào</span>
         </div>
 
         {/* Chú thích */}
@@ -131,7 +153,7 @@ export function SeatMap({ seats }: SeatMapProps) {
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-red-200 border border-red-300 rounded"></div>
-            <span>Block</span>
+            <span>Block (Hạng A)</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-slate-700 rounded flex items-center justify-center">
