@@ -27,13 +27,14 @@ import {
   getPersonsPaginated,
   validateAndUploadFace,
   registerOrUpdatePerson,
+  GetPersonsParams,
 } from "@/services/person.service"
 import {
   PaginatedApiResponse,
   Person,
   RegistrationPayload,
 } from "@/types/person.type"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { ISeat } from "@/types/seat.type"
 import { getSeatsInfo } from "@/services/seat.service"
 import { IItem, IItemData } from "@/types/item.type"
@@ -54,6 +55,7 @@ interface FoodCombo {
  * Bao gồm 4 bước: Chọn khách hàng, Lấy thông tin, Chọn ghế, Khu trải nghiệm
  */
 export default function DangKyHoPage() {
+  const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedCustomer, setSelectedCustomer] = useState<Person | null>(null)
   const [customerInfo, setCustomerInfo] = useState({
