@@ -27,7 +27,7 @@ import {
 import { useRouter } from "next/navigation"
 import { getPersonsPaginated, deletePerson, importPersons, addPerson, validateAndUploadFace } from "@/services/person.service"
 import { Person, PaginatedApiResponse, AddPersonPayload } from "@/types/person.type"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -37,7 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
  */
 export default function QuanLyKhachMoiPage() {
   const router = useRouter()
-  const { toast } = useToast()
+
   const [persons, setPersons] = useState<Person[]>([])
   const [pagination, setPagination] = useState<Omit<PaginatedApiResponse<Person>, "content">>({
     page: 0,
@@ -90,15 +90,11 @@ export default function QuanLyKhachMoiPage() {
         last: data.last,
       })
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách khách mời.",
-        variant: "destructive",
-      })
+      toast.error("Không thể tải danh sách khách mời.")
     } finally {
       setIsLoading(false)
     }
-  }, [pagination.page, pagination.size, sortBy, sortDir, toast])
+  }, [pagination.page, pagination.size, sortBy, sortDir])
 
   useEffect(() => {
     fetchPersons()
@@ -128,18 +124,10 @@ export default function QuanLyKhachMoiPage() {
   const handleDeleteGuest = async (person: Person) => {
     try {
       await deletePerson(person.personId)
-      toast({
-        title: "Thành công",
-        description: `Đã xóa khách mời "${person.fullName}".`,
-        variant: "default",
-      })
+      toast.success(`Đã xóa khách mời "${person.fullName}".`)
       fetchPersons() // Tải lại danh sách sau khi xóa
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: `Không thể xóa khách mời "${person.fullName}".`,
-        variant: "destructive",
-      })
+      toast.error(`Không thể xóa khách mời "${person.fullName}".`)
     }
   }
 
@@ -151,27 +139,16 @@ export default function QuanLyKhachMoiPage() {
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) {
-      toast({
-        title: "Thông báo",
-        description: "Bạn chưa chọn file để import.",
-      })
+      toast.info("Bạn chưa chọn file để import.")
       return
     }
     try {
       setIsImporting(true)
       await importPersons(file)
-      toast({
-        title: "Thành công",
-        description: "Đã nhập danh sách khách mời thành công.",
-        variant: "default",
-      })
+      toast.success("Đã nhập danh sách khách mời thành công.")
       fetchPersons() // Tải lại danh sách
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể nhập danh sách khách mời từ file.",
-        variant: "destructive",
-      })
+      toast.error("Không thể nhập danh sách khách mời từ file.")
     } finally {
       // Reset input & state
       event.target.value = ""
@@ -195,11 +172,7 @@ export default function QuanLyKhachMoiPage() {
   const handleAddSubmit = async () => {
     // Basic validation
     if (!newPersonData.fullName || !newPersonData.email) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng điền các trường bắt buộc (Họ tên, Email).",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền các trường bắt buộc (Họ tên, Email).")
       return
     }
 
@@ -212,23 +185,13 @@ export default function QuanLyKhachMoiPage() {
       if (avatarFile && createResponse?.data?.personId) {
         try {
           await validateAndUploadFace(createResponse.data.personId, avatarFile)
-          toast({
-            title: "Thành công",
-            description: "Đã thêm khách mời mới và upload avatar thành công.",
-          })
+          toast.success("Đã thêm khách mời mới và upload avatar thành công.")
         } catch (avatarError) {
           // Nếu upload avatar thất bại nhưng tạo người dùng thành công
-          toast({
-            title: "Cảnh báo",
-            description: "Đã thêm khách mời mới nhưng upload avatar thất bại. Bạn có thể cập nhật avatar sau.",
-            variant: "destructive",
-          })
+          toast.warning("Đã thêm khách mời mới nhưng upload avatar thất bại. Bạn có thể cập nhật avatar sau.")
         }
       } else {
-        toast({
-          title: "Thành công",
-          description: "Đã thêm khách mời mới.",
-        })
+        toast.success("Đã thêm khách mời mới.")
       }
       
       // Reset form và đóng modal
@@ -246,11 +209,7 @@ export default function QuanLyKhachMoiPage() {
       setIsAddModalOpen(false)
       fetchPersons() // Tải lại danh sách
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể thêm khách mời mới. Vui lòng thử lại.",
-        variant: "destructive",
-      })
+      toast.error("Không thể thêm khách mời mới. Vui lòng thử lại.")
     } finally {
       setIsSubmitting(false)
     }
@@ -448,15 +407,66 @@ export default function QuanLyKhachMoiPage() {
 
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.first}>
-            ← Previous
-          </Button>
           <div className="text-sm text-gray-700">
-            Trang {pagination.page + 1} / {pagination.totalPages}
+            Hiển thị {pagination.page * pagination.size + 1} đến{" "}
+            {Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)} trong tổng số{" "}
+            {pagination.totalElements} khách mời
           </div>
-          <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.last}>
-            Next →
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.first}
+            >
+              ← Trước
+            </Button>
+            <div className="flex items-center space-x-1">
+              {/* Logic hiển thị các nút trang */}
+              {Array.from({ length: pagination.totalPages }, (_, i) => i).map((pageIndex) => {
+                const pageNumber = pageIndex + 1
+                const isCurrent = pagination.page === pageIndex
+
+                // Logic để hiển thị giới hạn các nút trang và dấu "..."
+                if (
+                  pagination.totalPages <= 7 || // Hiển thị tất cả nếu ít hơn hoặc bằng 7 trang
+                  pageIndex < 3 || // Luôn hiển thị 3 trang đầu
+                  pageIndex > pagination.totalPages - 4 || // Luôn hiển thị 3 trang cuối
+                  Math.abs(pagination.page - pageIndex) < 2 // Luôn hiển thị trang hiện tại và các trang lân cận
+                ) {
+                  return (
+                    <Button
+                      key={pageNumber}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(pageIndex)}
+                      className={isCurrent ? "bg-orange-500 text-white" : ""}
+                    >
+                      {pageNumber}
+                    </Button>
+                  )
+                } else if (
+                  (pageIndex === 3 && pagination.page > 4) ||
+                  (pageIndex === pagination.totalPages - 4 && pagination.page < pagination.totalPages - 5)
+                ) {
+                  return (
+                    <span key={`dots-${pageIndex}`} className="text-sm text-gray-500 px-2">
+                      ...
+                    </span>
+                  )
+                }
+                return null
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.last}
+            >
+              Sau →
+            </Button>
+          </div>
         </div>
       </div>
 

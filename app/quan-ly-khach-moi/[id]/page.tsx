@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { getPersonByEmail, registerOrUpdatePerson, deletePerson, validateAndUploadFace } from "@/services/person.service"
 import { Person, RegistrationPayload } from "@/types/person.type"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function ChiTietKhachMoiPage() {
   const router = useRouter()
   const params = useParams()
-  const { toast } = useToast()
+
   const personEmail = params.id as string
 
   const [person, setPerson] = useState<Person | null>(null)
@@ -77,18 +77,14 @@ export default function ChiTietKhachMoiPage() {
             // Items are not part of the update payload structure from user request, so not included here
           })
         } catch (error) {
-          toast({
-            title: "Lỗi",
-            description: "Không thể tải thông tin khách mời.",
-            variant: "destructive",
-          })
+          toast.error("Không thể tải thông tin khách mời.")
         } finally {
           setIsLoading(false)
         }
       }
       fetchPerson()
     }
-  }, [personEmail, toast])
+  }, [personEmail])
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -122,16 +118,9 @@ export default function ChiTietKhachMoiPage() {
       if (avatarFile) {
         try {
           await validateAndUploadFace(person.personId, avatarFile)
-          toast({
-            title: "Thành công",
-            description: "Đã upload avatar thành công.",
-          })
+          toast.success("Đã upload avatar thành công.")
         } catch (avatarError) {
-          toast({
-            title: "Cảnh báo",
-            description: "Upload avatar thất bại, nhưng sẽ tiếp tục cập nhật thông tin.",
-            variant: "destructive",
-          })
+          toast.warning("Upload avatar thất bại, nhưng sẽ tiếp tục cập nhật thông tin.")
         }
       }
 
@@ -163,21 +152,14 @@ export default function ChiTietKhachMoiPage() {
       }
 
       await registerOrUpdatePerson(payload)
-      toast({
-        title: "Thành công",
-        description: "Thông tin khách mời đã được cập nhật.",
-      })
+      toast.success("Thông tin khách mời đã được cập nhật.")
       setIsEditMode(false)
       setAvatarFile(null) // Reset avatar file
       // Refetch data to show updated info
       const updatedData = await getPersonByEmail(personEmail)
       setPerson(updatedData)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể cập nhật thông tin khách mời.",
-        variant: "destructive",
-      })
+      toast.error("Không thể cập nhật thông tin khách mời.")
     } finally {
       setIsSubmitting(false)
     }
@@ -187,17 +169,10 @@ export default function ChiTietKhachMoiPage() {
     if (!person) return
     try {
       await deletePerson(person.personId)
-      toast({
-        title: "Thành công",
-        description: "Khách mời đã được xóa.",
-      })
+      toast.success("Khách mời đã được xóa.")
       router.push("/quan-ly-khach-moi")
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa khách mời.",
-        variant: "destructive",
-      })
+      toast.error("Không thể xóa khách mời.")
     }
   }
 

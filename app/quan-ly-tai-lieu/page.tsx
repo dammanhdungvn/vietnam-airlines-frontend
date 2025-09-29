@@ -40,7 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { IDocument } from "@/types/document.type"
 import {
   getAllDocuments,
@@ -79,11 +79,7 @@ export default function QuanLyTaiLieuPage() {
       setDocuments(data)
     } catch (err) {
       setError("Không thể tải danh sách tài liệu.")
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách tài liệu từ máy chủ.",
-        variant: "destructive",
-      })
+      toast.error("Không thể tải danh sách tài liệu từ máy chủ.")
     } finally {
       setIsLoading(false)
     }
@@ -160,12 +156,12 @@ export default function QuanLyTaiLieuPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.documentName || !formData.author) {
-      toast({ title: "Lỗi", description: "Vui lòng điền đầy đủ tên tài liệu và tác giả.", variant: "destructive" })
+      toast.error("Vui lòng điền đầy đủ tên tài liệu và tác giả.")
       return
     }
     // File là bắt buộc khi tạo mới
     if (!selectedDocument && !formData.file) {
-      toast({ title: "Lỗi", description: "Vui lòng chọn file đính kèm.", variant: "destructive" })
+      toast.error("Vui lòng chọn file đính kèm.")
       return
     }
 
@@ -177,18 +173,11 @@ export default function QuanLyTaiLieuPage() {
 
     try {
       await createOrUpdateDocument(payload, formData.file)
-      toast({
-        title: "Thành công",
-        description: `Đã ${selectedDocument ? "cập nhật" : "thêm"} tài liệu thành công.`,
-      })
+      toast.success(`Đã ${selectedDocument ? "cập nhật" : "thêm"} tài liệu thành công.`)
       setIsModalOpen(false)
       fetchDocuments() // Tải lại danh sách
     } catch (error) {
-      toast({
-        title: "Thất bại",
-        description: "Đã có lỗi xảy ra. Vui lòng thử lại.",
-        variant: "destructive",
-      })
+      toast.error("Đã có lỗi xảy ra. Vui lòng thử lại.")
     }
   }
 
@@ -196,17 +185,10 @@ export default function QuanLyTaiLieuPage() {
     if (!selectedDocument) return
     try {
       await deleteDocument(selectedDocument.id)
-      toast({
-        title: "Xóa thành công",
-        description: `Đã xóa tài liệu "${selectedDocument.documentName}"`,
-      })
+      toast.success(`Đã xóa tài liệu "${selectedDocument.documentName}"`)
       fetchDocuments()
     } catch (error) {
-      toast({
-        title: "Xóa thất bại",
-        description: "Không thể xóa tài liệu. Vui lòng thử lại.",
-        variant: "destructive",
-      })
+      toast.error("Không thể xóa tài liệu. Vui lòng thử lại.")
     } finally {
       setIsDeleteDialogOpen(false)
       setSelectedDocument(null)

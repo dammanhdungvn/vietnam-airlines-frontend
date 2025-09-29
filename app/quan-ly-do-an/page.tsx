@@ -22,7 +22,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { createItem, deleteItem, getItems, updateItem } from "@/services/item.service"
 import { IItem, IItemData } from "@/types/item.type"
 
@@ -86,11 +86,7 @@ export default function QuanLyDoAnPage() {
       })
     } catch (err) {
       setError("Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.")
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách sản phẩm từ máy chủ.",
-        variant: "destructive",
-      })
+      toast.error("Không thể tải danh sách sản phẩm từ máy chủ.")
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -139,11 +135,7 @@ export default function QuanLyDoAnPage() {
   const handleSubmit = async () => {
     const price = Number.parseInt(formData.price)
     if (!formData.itemName || Number.isNaN(price) || price < 0) {
-      toast({
-        title: "Dữ liệu không hợp lệ",
-        description: "Vui lòng kiểm tra lại tên món và giá.",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng kiểm tra lại tên món và giá.")
       return
     }
 
@@ -158,26 +150,16 @@ export default function QuanLyDoAnPage() {
       if (selectedDoAn) {
         // Chế độ chỉnh sửa
         await updateItem({ ...payload, id: selectedDoAn.id })
-        toast({
-          title: "Cập nhật thành công",
-          description: `Đã cập nhật thông tin món ${formData.itemName}`,
-        })
+        toast.success(`Đã cập nhật thông tin món ${formData.itemName}`)
       } else {
         // Chế độ thêm mới
         await createItem(payload)
-        toast({
-          title: "Thêm thành công",
-          description: `Đã thêm món ${formData.itemName} vào danh sách.`,
-        })
+        toast.success(`Đã thêm món ${formData.itemName} vào danh sách.`)
       }
       setIsModalOpen(false)
       fetchItems() // Tải lại danh sách sản phẩm
     } catch (error) {
-      toast({
-        title: "Thao tác thất bại",
-        description: "Đã có lỗi xảy ra. Vui lòng thử lại.",
-        variant: "destructive",
-      })
+      toast.error("Đã có lỗi xảy ra. Vui lòng thử lại.")
     }
   }
 
@@ -187,17 +169,10 @@ export default function QuanLyDoAnPage() {
     try {
       await deleteItem(selectedDoAn.id)
       setIsDeleteDialogOpen(false)
-      toast({
-        title: "Xóa thành công",
-        description: `Đã xóa món ${selectedDoAn.itemName}`,
-      })
+      toast.success(`Đã xóa món ${selectedDoAn.itemName}`)
       fetchItems() // Tải lại danh sách
     } catch (error) {
-      toast({
-        title: "Xóa thất bại",
-        description: `Không thể xóa món ${selectedDoAn.itemName}. Vui lòng thử lại.`,
-        variant: "destructive",
-      })
+      toast.error(`Không thể xóa món ${selectedDoAn.itemName}. Vui lòng thử lại.`)
     }
   }
 

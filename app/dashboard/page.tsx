@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsChart } from "@/components/stats-chart"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { getStatistics } from "@/services/statistics.service"
 import { IStatisticsData } from "@/types/statistics.type"
 import {
@@ -44,7 +44,6 @@ export default function DashboardPage() {
   // State quản lý dữ liệu thống kê và trạng thái loading
   const [statisticsData, setStatisticsData] = useState<IStatisticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const { toast } = useToast()
 
   /**
    * Hàm tải dữ liệu thống kê từ API.
@@ -58,18 +57,10 @@ export default function DashboardPage() {
       if (response.code === 200 && response.data) {
         setStatisticsData(response.data)
       } else {
-        toast({
-          title: "Lỗi",
-          description: response.message || "Không thể tải dữ liệu thống kê",
-          variant: "destructive",
-        })
+        toast.error(response.message || "Không thể tải dữ liệu thống kê")
       }
     } catch (error: any) {
-      toast({
-        title: "Lỗi",
-        description: error.response?.data?.message || "Đã có lỗi xảy ra khi tải dữ liệu thống kê",
-        variant: "destructive",
-      })
+      toast.error(error.response?.data?.message || "Đã có lỗi xảy ra khi tải dữ liệu thống kê")
     } finally {
       setIsLoading(false)
     }

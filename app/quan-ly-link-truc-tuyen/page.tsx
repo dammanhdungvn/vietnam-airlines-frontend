@@ -23,7 +23,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { Stream } from "@/types/stream.type"
 import { createOrUpdateStream, deleteStream, getStreams } from "@/services/stream.service"
 import React, { useEffect } from "react"
@@ -54,11 +54,7 @@ export default function QuanLyLinkTrucTuyenPage() {
       const data = await getStreams()
       setStreams(data)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách link.",
-        variant: "destructive",
-      })
+      toast.error("Không thể tải danh sách link.")
     }
   }
 
@@ -131,16 +127,9 @@ export default function QuanLyLinkTrucTuyenPage() {
       await createOrUpdateStream(payload)
       setIsModalOpen(false)
       fetchStreams() // Tải lại dữ liệu
-      toast({
-        title: "Thành công",
-        description: `Đã ${formData.id ? "cập nhật" : "tạo mới"} link thành công.`,
-      })
+      toast.success(`Đã ${formData.id ? "cập nhật" : "tạo mới"} link thành công.`)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: `Không thể ${formData.id ? "cập nhật" : "tạo mới"} link.`,
-        variant: "destructive",
-      })
+      toast.error(`Không thể ${formData.id ? "cập nhật" : "tạo mới"} link.`)
     }
   }
 
@@ -151,16 +140,9 @@ export default function QuanLyLinkTrucTuyenPage() {
       await deleteStream(selectedStream.id)
       setIsDeleteDialogOpen(false)
       fetchStreams() // Tải lại dữ liệu
-      toast({
-        title: "Xóa thành công",
-        description: `Đã xóa link ${selectedStream.streamName}`,
-      })
+      toast.success(`Đã xóa link ${selectedStream.streamName}`)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: `Không thể xóa link ${selectedStream.streamName}.`,
-        variant: "destructive",
-      })
+      toast.error(`Không thể xóa link ${selectedStream.streamName}.`)
     }
   }
 

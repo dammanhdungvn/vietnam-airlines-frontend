@@ -7,7 +7,7 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { login } from "@/services/auth.service"
 import { ILoginPayload } from "@/types/auth.type"
 import { useAuth } from "@/context/AuthContext"
@@ -35,7 +35,7 @@ const loginSchema = z.object({
  */
 export default function LoginPage() {
   const router = useRouter()
-  const { toast } = useToast()
+
   const { login: authLogin } = useAuth() // Lấy hàm login từ AuthContext và đổi tên thành authLogin
 
   // Khởi tạo react-hook-form
@@ -57,26 +57,15 @@ export default function LoginPage() {
       // Kiểm tra đăng nhập thành công
       if (responseData.code === 200 && responseData.data.accessToken) {
         authLogin(responseData.data) // Gọi hàm login từ AuthContext để lưu thông tin
-        toast({
-          title: "Thành công",
-          description: "Đăng nhập thành công!",
-        })
+        toast.success("Đăng nhập thành công!")
         router.push("/dashboard") // Điều hướng đến trang dashboard
       } else {
         // Hiển thị thông báo lỗi từ API
-        toast({
-          title: "Lỗi",
-          description: responseData.message,
-          variant: "destructive",
-        })
+        toast.error(responseData.message)
       }
     } catch (error: any) {
       // Xử lý các lỗi khác (ví dụ: lỗi mạng)
-      toast({
-        title: "Lỗi",
-        description: error.response?.data?.message || "Đã có lỗi xảy ra. Vui lòng thử lại.",
-        variant: "destructive",
-      })
+      toast.error(error.response?.data?.message || "Đã có lỗi xảy ra. Vui lòng thử lại.")
     }
   }
 

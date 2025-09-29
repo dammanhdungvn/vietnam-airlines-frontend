@@ -22,7 +22,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { SeatMap } from "@/components/seat-map"
 import { getSeatsInfo, updateSeat, deleteSeat } from "@/services/seat.service"
 import { ISeat, SeatType } from "@/types/seat.type"
@@ -64,11 +64,7 @@ export default function QuanLyGhePage() {
         setTotalElements(data.totalElements)
       } catch (error) {
         console.error("Lỗi khi tải thông tin tổng số ghế:", error)
-        toast({
-          title: "Lỗi",
-          description: "Không thể tải dữ liệu ban đầu. Vui lòng thử lại.",
-          variant: "destructive",
-        })
+        toast.error("Không thể tải dữ liệu ban đầu. Vui lòng thử lại.")
         setLoading(false)
       }
     }
@@ -95,11 +91,7 @@ export default function QuanLyGhePage() {
         setSeats(sortedSeats)
       } catch (error) {
         console.error("Lỗi khi tải toàn bộ danh sách ghế:", error)
-        toast({
-          title: "Lỗi",
-          description: "Không thể tải danh sách ghế. Vui lòng thử lại.",
-          variant: "destructive",
-        })
+        toast.error("Không thể tải danh sách ghế. Vui lòng thử lại.")
       } finally {
         setLoading(false)
       }
@@ -281,17 +273,10 @@ export default function QuanLyGhePage() {
       )
       setSeats(updatedSeats)
       
-      toast({
-        title: "Cập nhật thành công",
-        description: `Đã cập nhật thông tin ghế ${payload.seatNumber}`,
-      })
+      toast.success(`Đã cập nhật thông tin ghế ${payload.seatNumber}`)
 
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể cập nhật thông tin ghế. Vui lòng thử lại.",
-        variant: "destructive",
-      })
+      toast.error("Không thể cập nhật thông tin ghế. Vui lòng thử lại.")
     } finally {
       setIsEditDialogOpen(false)
       setSelectedGhe(null)
@@ -307,17 +292,10 @@ export default function QuanLyGhePage() {
       const updatedSeats = seats.filter((seat) => seat.id !== selectedGhe.id)
       setSeats(updatedSeats)
 
-      toast({
-        title: "Xóa thành công",
-        description: `Đã xóa ghế ${selectedGhe.seatNumber}`,
-      })
+      toast.success(`Đã xóa ghế ${selectedGhe.seatNumber}`)
 
     } catch (error) {
-       toast({
-        title: "Lỗi",
-        description: "Không thể xóa ghế. Vui lòng thử lại.",
-        variant: "destructive",
-      })
+       toast.error("Không thể xóa ghế. Vui lòng thử lại.")
     } finally {
       setIsDeleteDialogOpen(false)
       setSelectedGhe(null)
