@@ -32,7 +32,7 @@ export enum SeatType {
 
 /**
  * @interface ISeat
- * @description Định nghĩa cấu trúc của một đối tượng ghế.
+ * @description Định nghĩa cấu trúc của một đối tượng ghế từ API mới.
  */
 export interface ISeat {
   /**
@@ -51,19 +51,48 @@ export interface ISeat {
   type: SeatType;
 
   /**
-   * @property {number | null} basePrice - Giá gốc của ghế. Có thể là `null` nếu không áp dụng.
+   * @property {number} basePrice - Giá gốc của ghế.
    */
-  basePrice: number | null;
+  basePrice: number;
 
   /**
-   * @property {SeatStatus} status - Trạng thái hiện tại của ghế.
+   * @property {number} paidPrice - Giá đã trả cho ghế.
    */
-  status: SeatStatus;
+  paidPrice: number;
+
+  /**
+   * @property {boolean} isBooked - Trạng thái ghế đã được đặt hay chưa.
+   */
+  isBooked: boolean;
+
+  /**
+   * @property {string} createdAt - Thời gian tạo bản ghi.
+   */
+  createdAt: string;
+
+  /**
+   * @property {string} updatedAt - Thời gian cập nhật bản ghi lần cuối.
+   */
+  updatedAt: string;
+}
+
+/**
+ * @interface IPaginatedData
+ * @description Định nghĩa cấu trúc dữ liệu phân trang từ API.
+ */
+export interface IPaginatedData<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
 }
 
 /**
  * @interface ISeatResponse
- * @description Định nghĩa cấu trúc response từ API ghế.
+ * @description Định nghĩa cấu trúc response từ API lấy thông tin ghế.
  */
 export interface ISeatResponse {
   /**
@@ -77,7 +106,7 @@ export interface ISeatResponse {
   message: string;
 
   /**
-   * @property {ISeat[]} data - Mảng danh sách ghế.
+   * @property {IPaginatedData<ISeat>} data - Dữ liệu phân trang chứa danh sách ghế.
    */
-  data: ISeat[];
+  data: IPaginatedData<ISeat>;
 }

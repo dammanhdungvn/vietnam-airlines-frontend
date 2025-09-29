@@ -24,8 +24,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { SeatMap } from "@/components/seat-map"
-import { getAllSeats } from "@/services/seat.service"
-import { ISeat, SeatStatus, SeatType } from "@/types/seat.type"
+import { getSeatsInfo } from "@/services/seat.service"
+import { ISeat, SeatType } from "@/types/seat.type"
 
 /**
  * Trang Quản lý ghế
@@ -33,6 +33,7 @@ import { ISeat, SeatStatus, SeatType } from "@/types/seat.type"
  */
 export default function QuanLyGhePage() {
   const [seats, setSeats] = useState<ISeat[]>([])
+  const [totalElements, setTotalElements] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
@@ -52,30 +53,65 @@ export default function QuanLyGhePage() {
   })
 
   /**
-   * @function fetchSeats
-   * @description Lấy dữ liệu ghế từ API và cập nhật state.
+   * @function fetchInitialSeatInfo
+   * @description Lấy thông tin tổng số ghế để biết kích thước đầy đủ.
    */
-  const fetchSeats = async () => {
-    setLoading(true)
-    try {
-      const seatsData = await getAllSeats()
-      setSeats(seatsData)
-    } catch (error) {
-      console.error('Lỗi khi tải dữ liệu ghế:', error)
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải dữ liệu ghế. Vui lòng thử lại.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Gọi API khi component mount
   useEffect(() => {
-    fetchSeats()
+    const fetchInitialSeatInfo = async () => {
+      setLoading(true)
+      try {
+        const data = await getSeatsInfo({ page: 0, size: 1, sortBy: 'id', sortDir: 'asc' })
+        setTotalElements(data.totalElements)
+      } catch (error) {
+        console.error("Lỗi khi tải thông tin tổng số ghế:", error)
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải dữ liệu ban đầu. Vui lòng thử lại.",
+          variant: "destructive",
+        })
+        setLoading(false)
+      }
+    }
+    fetchInitialSeatInfo()
   }, [])
+
+  /**
+   * @function fetchAllSeats
+   * @description Lấy toàn bộ danh sách ghế sau khi đã biết tổng số.
+   */
+  useEffect(() => {
+    if (totalElements === null) return
+
+    const fetchAllSeats = async () => {
+      if (totalElements === 0) {
+        setSeats([])
+        setLoading(false)
+        return
+      }
+      
+      try {
+        const data = await getSeatsInfo({ page: 0, size: totalElements, sortBy: 'id', sortDir: 'asc' })
+        const sortedSeats = data.content.sort((a, b) => a.id - b.id);
+        setSeats(sortedSeats)
+      } catch (error) {
+        console.error("Lỗi khi tải toàn bộ danh sách ghế:", error)
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải danh sách ghế. Vui lòng thử lại.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAllSeats()
+  }, [totalElements])
+
+
+  const handleRefresh = () => {
+    window.location.reload()
+  }
 
   /**
    * @function getSeatTypeLabel
@@ -100,12 +136,12 @@ export default function QuanLyGhePage() {
 
   /**
    * @function getSeatStatusLabel
-   * @description Chuyển đổi SeatStatus enum thành label tiếng Việt.
-   * @param {SeatStatus} status - Trạng thái ghế.
+   * @description Chuyển đổi trạng thái isBooked thành label tiếng Việt.
+   * @param {boolean} isBooked - Trạng thái ghế.
    * @returns {string} Label tiếng Việt.
    */
-  const getSeatStatusLabel = (status: SeatStatus): string => {
-    return status === SeatStatus.AVAILABLE ? "Trống" : "Đã đặt"
+  const getSeatStatusLabel = (isBooked: boolean): string => {
+    return isBooked ? "Đã đặt" : "Trống"
   }
 
   const filteredSeats = useMemo(() => {
@@ -121,21 +157,19 @@ export default function QuanLyGhePage() {
     }
 
     // Filter theo loại ghế
-    if (selectedFilters.includes("VIP")) {
-      filtered = filtered.filter((seat) => seat.type === SeatType.VIP)
+    if (selectedFilters.length > 0) {
+        filtered = filtered.filter((seat) => {
+            if (selectedFilters.includes("VIP") && seat.type === SeatType.VIP) return true;
+            if (selectedFilters.includes("Thường") && seat.type === SeatType.NORMAL) return true;
+            if (selectedFilters.includes("Free") && seat.type === SeatType.FREE) return true;
+            if (selectedFilters.includes("Bị khóa") && seat.type === SeatType.BLOCK) return true;
+            if (selectedFilters.includes("Có giá") && seat.basePrice > 0) return true;
+            if (selectedFilters.includes("Đã đặt") && seat.isBooked) return true;
+            if (selectedFilters.includes("Trống") && !seat.isBooked) return true;
+            return false;
+        });
     }
-    if (selectedFilters.includes("Thường")) {
-      filtered = filtered.filter((seat) => seat.type === SeatType.NORMAL)
-    }
-    if (selectedFilters.includes("Free")) {
-      filtered = filtered.filter((seat) => seat.type === SeatType.FREE)
-    }
-    if (selectedFilters.includes("Bị khóa")) {
-      filtered = filtered.filter((seat) => seat.type === SeatType.BLOCK)
-    }
-    if (selectedFilters.includes("Có giá")) {
-      filtered = filtered.filter((seat) => seat.basePrice !== null && seat.basePrice > 0)
-    }
+
 
     // Sort theo tiêu chí được chọn
     filtered.sort((a, b) => {
@@ -147,9 +181,9 @@ export default function QuanLyGhePage() {
         case "Giá":
           return (a.basePrice || 0) - (b.basePrice || 0)
         case "Trạng thái":
-          return a.status.localeCompare(b.status)
+          return (a.isBooked ? 1 : 0) - (b.isBooked ? 1 : 0)
         default:
-          return 0
+          return a.id - b.id
       }
     })
 
@@ -228,13 +262,14 @@ export default function QuanLyGhePage() {
   const confirmEdit = () => {
     if (!selectedGhe) return
 
+    // Đây là logic giả lập phía client, cần thay thế bằng API call
     const updatedSeats = seats.map((seat) =>
       seat.id === selectedGhe.id
         ? {
             ...seat,
             seatNumber: editFormData.seatNumber,
             type: editFormData.type as SeatType,
-            basePrice: editFormData.basePrice ? parseFloat(editFormData.basePrice) : null,
+            basePrice: editFormData.basePrice ? parseFloat(editFormData.basePrice) : 0,
           }
         : seat,
     )
@@ -244,21 +279,22 @@ export default function QuanLyGhePage() {
     setSelectedGhe(null)
 
     toast({
-      title: "Cập nhật thành công",
+      title: "Cập nhật thành công (Client)",
       description: `Đã cập nhật thông tin ghế ${editFormData.seatNumber}`,
     })
   }
 
   const confirmDelete = () => {
     if (!selectedGhe) return
-
+    
+    // Đây là logic giả lập phía client, cần thay thế bằng API call
     const updatedSeats = seats.filter((seat) => seat.id !== selectedGhe.id)
     setSeats(updatedSeats)
     setIsDeleteDialogOpen(false)
     setSelectedGhe(null)
 
     toast({
-      title: "Xóa thành công",
+      title: "Xóa thành công (Client)",
       description: `Đã xóa ghế ${selectedGhe.seatNumber}`,
       variant: "destructive",
     })
@@ -284,7 +320,7 @@ export default function QuanLyGhePage() {
           <p className="text-gray-600 mt-1">Tổng cộng {seats.length} ghế</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm" onClick={fetchSeats}>
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Làm mới
           </Button>
@@ -358,6 +394,18 @@ export default function QuanLyGhePage() {
               >
                 Ghế có giá
               </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={selectedFilters.includes("Đã đặt")}
+                onCheckedChange={() => toggleFilter("Đã đặt")}
+              >
+                Đã đặt
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={selectedFilters.includes("Trống")}
+                onCheckedChange={() => toggleFilter("Trống")}
+              >
+                Trống
+              </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="flex items-center space-x-2 ml-auto">
@@ -422,14 +470,14 @@ export default function QuanLyGhePage() {
                       {getSeatTypeLabel(seat.type)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {seat.basePrice ? `${seat.basePrice.toLocaleString('vi-VN')}đ` : 'Miễn phí'}
+                      {seat.basePrice > 0 ? `${seat.basePrice.toLocaleString('vi-VN')}đ` : 'Miễn phí'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge 
-                        variant={seat.status === SeatStatus.AVAILABLE ? "default" : "secondary"}
-                        className={seat.status === SeatStatus.AVAILABLE ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                        variant={!seat.isBooked ? "default" : "secondary"}
+                        className={!seat.isBooked ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
                       >
-                        {getSeatStatusLabel(seat.status)}
+                        {getSeatStatusLabel(seat.isBooked)}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

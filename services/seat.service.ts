@@ -5,17 +5,32 @@
  */
 
 import api from '@/lib/api';
-import { ISeat, ISeatResponse } from '@/types/seat.type';
+import { ISeatResponse, IPaginatedData, ISeat } from '@/types/seat.type';
 
 /**
- * @function getAllSeats
- * @description Lấy danh sách tất cả các ghế từ API.
- * @returns {Promise<ISeat[]>} Một promise giải quyết với một mảng các đối tượng ghế.
+ * @interface GetSeatsInfoParams
+ * @description Định nghĩa các tham số cho hàm lấy thông tin ghế.
+ */
+interface GetSeatsInfoParams {
+  seatNumber?: string;
+  type?: string;
+  status?: string;
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
+
+/**
+ * @function getSeatsInfo
+ * @description Lấy danh sách ghế có phân trang và bộ lọc từ API.
+ * @param {GetSeatsInfoParams} params - Các tham số truy vấn.
+ * @returns {Promise<IPaginatedData<ISeat>>} Một promise giải quyết với dữ liệu phân trang của các ghế.
  * @throws {Error} Ném ra lỗi nếu yêu cầu API thất bại.
  */
-export const getAllSeats = async (): Promise<ISeat[]> => {
+export const getSeatsInfo = async (params: GetSeatsInfoParams): Promise<IPaginatedData<ISeat>> => {
   try {
-    const response = await api.get<ISeatResponse>('/seats');
+    const response = await api.get<ISeatResponse>('/seats/info', { params });
     return response.data.data;
   } catch (error) {
     console.error('Không thể lấy danh sách ghế:', error);

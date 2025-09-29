@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useMemo } from "react"
 import { cn } from "@/lib/utils"
-import { Star, X } from "lucide-react"
-import { ISeat, SeatStatus, SeatType } from "@/types/seat.type"
+import { Star, User } from "lucide-react"
+import { ISeat, SeatType } from "@/types/seat.type"
 
 /**
  * @interface SeatMapProps
@@ -18,12 +18,11 @@ interface SeatMapProps {
 
 /**
  * Component sơ đồ chỗ ngồi máy bay
- * Hiển thị các ghế với trạng thái khác nhau: VIP, Thường, Free, Đã đặt, Đang chọn
+ * Hiển thị các ghế với trạng thái khác nhau: VIP, Thường, Free, Đã đặt.
+ * Sơ đồ này chỉ hiển thị, không có chức năng chọn ghế.
  * @param {SeatMapProps} props - Props của component.
  */
 export function SeatMap({ seats }: SeatMapProps) {
-  const [selectedSeat, setSelectedSeat] = useState<ISeat | null>(null)
-
   // Gom nhóm ghế theo hàng từ dữ liệu API
   const seatRows = useMemo(() => {
     const rows: { [key: string]: ISeat[] } = {}
@@ -34,7 +33,14 @@ export function SeatMap({ seats }: SeatMapProps) {
       }
       rows[rowChar].push(seat)
     })
-    return Object.entries(rows).map(([row, seats]) => ({ row, seats }))
+    return Object.entries(rows).map(([row, seatsInRow]) => ({
+      row,
+      seats: seatsInRow.sort((a, b) => {
+        const aNum = parseInt(a.seatNumber.substring(1), 10);
+        const bNum = parseInt(b.seatNumber.substring(1), 10);
+        return aNum - bNum;
+      })
+    }))
   }, [seats])
 
   /**
@@ -44,21 +50,18 @@ export function SeatMap({ seats }: SeatMapProps) {
    * @returns {string} Class CSS tương ứng.
    */
   const getSeatStyle = (seat: ISeat) => {
-    if (selectedSeat?.id === seat.id) {
-      return "bg-yellow-500 text-white border-yellow-600"
-    }
-    if (seat.status === SeatStatus.TAKEN) {
-      return "bg-gray-300 text-gray-500 cursor-not-allowed"
+    if (seat.isBooked) {
+      return "bg-slate-700 text-white cursor-not-allowed"
     }
     switch (seat.type) {
       case SeatType.VIP:
-        return "bg-yellow-100 border-yellow-300 hover:bg-yellow-200"
+        return "bg-yellow-100 border-yellow-300"
       case SeatType.NORMAL:
-        return "bg-teal-100 border-teal-300 hover:bg-teal-200"
+        return "bg-teal-100 border-teal-300"
       case SeatType.FREE:
-        return "bg-green-100 border-green-300 hover:bg-green-200"
+        return "bg-green-100 border-green-300"
       case SeatType.BLOCK:
-        return "bg-gray-100 border-gray-300 cursor-not-allowed"
+        return "bg-red-200 border-red-300" // Phân biệt ghế BLOCK nhưng không vô hiệu hóa
       default:
         return "bg-gray-100 border-gray-300"
     }
@@ -71,8 +74,8 @@ export function SeatMap({ seats }: SeatMapProps) {
    * @returns {JSX.Element | null} Icon component hoặc null.
    */
   const getSeatIcon = (seat: ISeat) => {
-    if (seat.status === SeatStatus.TAKEN) {
-      return <X className="w-3 h-3" />
+    if (seat.isBooked) {
+      return <User className="w-4 h-4" />
     }
     if (seat.type === SeatType.VIP) {
       return <Star className="w-3 h-3 text-yellow-600" />
@@ -96,22 +99,16 @@ export function SeatMap({ seats }: SeatMapProps) {
               <div className="w-8 text-center font-medium text-gray-700">{row}</div>
               <div className="flex flex-wrap gap-1">
                 {seats.map((seat) => (
-                  <button
+                  <div
                     key={seat.id}
-                    onClick={() => {
-                      if (seat.status !== SeatStatus.TAKEN && seat.type !== SeatType.BLOCK) {
-                        setSelectedSeat(seat)
-                      }
-                    }}
                     className={cn(
-                      "w-8 h-8 border rounded flex items-center justify-center text-xs font-medium transition-colors",
+                      "w-8 h-8 border rounded flex items-center justify-center text-xs font-medium",
                       getSeatStyle(seat),
                     )}
-                    disabled={seat.status === SeatStatus.TAKEN || seat.type === SeatType.BLOCK}
                     title={seat.seatNumber}
                   >
                     {getSeatIcon(seat) || seat.seatNumber}
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -119,7 +116,7 @@ export function SeatMap({ seats }: SeatMapProps) {
         </div>
 
         {/* Chú thích */}
-        <div className="flex items-center justify-center space-x-6 mt-8 text-sm">
+        <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-8 text-sm">
           <div className="flex items-center space-x-2">
             <Star className="w-4 h-4 text-yellow-600" />
             <span>VIP</span>
@@ -133,38 +130,17 @@ export function SeatMap({ seats }: SeatMapProps) {
             <span>Free</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
-            <span>Bị khóa</span>
+            <div className="w-4 h-4 bg-red-200 border border-red-300 rounded"></div>
+            <span>Block</span>
           </div>
           <div className="flex items-center space-x-2">
-            <X className="w-4 h-4 text-gray-500" />
+            <div className="w-4 h-4 bg-slate-700 rounded flex items-center justify-center">
+                <User className="w-3 h-3 text-white" />
+            </div>
             <span>Đã đặt</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-yellow-500 border border-yellow-600 rounded"></div>
-            <span>Đang chọn</span>
           </div>
         </div>
       </div>
-
-      {/* Thông tin ghế đã chọn */}
-      {selectedSeat && (
-        <div className="mt-6 bg-gray-50 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Ghế: {selectedSeat.seatNumber}</p>
-              <p className="text-sm text-gray-600">
-                Loại: {selectedSeat.type} | Trạng thái: {selectedSeat.status === SeatStatus.AVAILABLE ? 'Trống' : 'Đã đặt'}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold">
-                {selectedSeat.basePrice ? `${selectedSeat.basePrice.toLocaleString('vi-VN')}đ` : 'Miễn phí'}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
