@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { SeatMap } from "@/components/seat-map"
-import { getSeatsInfo } from "@/services/seat.service"
+import { getSeatsInfo, updateSeat, deleteSeat } from "@/services/seat.service"
 import { ISeat, SeatType } from "@/types/seat.type"
 
 /**
@@ -37,7 +37,7 @@ export default function QuanLyGhePage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
-  const [sortBy, setSortBy] = useState("Tên số ghế")
+  const [sortBy, setSortBy] = useState("ID")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
@@ -174,6 +174,8 @@ export default function QuanLyGhePage() {
     // Sort theo tiêu chí được chọn
     filtered.sort((a, b) => {
       switch (sortBy) {
+        case "ID":
+          return a.id - b.id
         case "Tên số ghế":
           return a.seatNumber.localeCompare(b.seatNumber)
         case "Loại ghế":
@@ -182,7 +184,7 @@ export default function QuanLyGhePage() {
           return (a.basePrice || 0) - (b.basePrice || 0)
         case "Trạng thái":
           return (a.isBooked ? 1 : 0) - (b.isBooked ? 1 : 0)
-        default:
+        default: // Mặc định sắp xếp theo ID
           return a.id - b.id
       }
     })
@@ -259,45 +261,67 @@ export default function QuanLyGhePage() {
     setIsDeleteDialogOpen(true)
   }
 
-  const confirmEdit = () => {
+  const confirmEdit = async () => {
     if (!selectedGhe) return
 
-    // Đây là logic giả lập phía client, cần thay thế bằng API call
-    const updatedSeats = seats.map((seat) =>
-      seat.id === selectedGhe.id
-        ? {
-            ...seat,
-            seatNumber: editFormData.seatNumber,
-            type: editFormData.type as SeatType,
-            basePrice: editFormData.basePrice ? parseFloat(editFormData.basePrice) : 0,
-          }
-        : seat,
-    )
+    const payload = {
+      id: selectedGhe.id,
+      seatNumber: editFormData.seatNumber,
+      type: editFormData.type as SeatType,
+      basePrice: editFormData.basePrice ? parseFloat(editFormData.basePrice) : 0,
+      paidPrice: selectedGhe.paidPrice // Giữ nguyên giá đã trả
+    };
 
-    setSeats(updatedSeats)
-    setIsEditDialogOpen(false)
-    setSelectedGhe(null)
+    try {
+      await updateSeat(payload);
+      
+      // Cập nhật lại state ở client
+      const updatedSeats = seats.map((seat) =>
+        seat.id === selectedGhe.id ? { ...seat, ...payload } : seat,
+      )
+      setSeats(updatedSeats)
+      
+      toast({
+        title: "Cập nhật thành công",
+        description: `Đã cập nhật thông tin ghế ${payload.seatNumber}`,
+      })
 
-    toast({
-      title: "Cập nhật thành công (Client)",
-      description: `Đã cập nhật thông tin ghế ${editFormData.seatNumber}`,
-    })
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật thông tin ghế. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsEditDialogOpen(false)
+      setSelectedGhe(null)
+    }
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!selectedGhe) return
     
-    // Đây là logic giả lập phía client, cần thay thế bằng API call
-    const updatedSeats = seats.filter((seat) => seat.id !== selectedGhe.id)
-    setSeats(updatedSeats)
-    setIsDeleteDialogOpen(false)
-    setSelectedGhe(null)
+    try {
+      await deleteSeat(selectedGhe.id);
 
-    toast({
-      title: "Xóa thành công (Client)",
-      description: `Đã xóa ghế ${selectedGhe.seatNumber}`,
-      variant: "destructive",
-    })
+      const updatedSeats = seats.filter((seat) => seat.id !== selectedGhe.id)
+      setSeats(updatedSeats)
+
+      toast({
+        title: "Xóa thành công",
+        description: `Đã xóa ghế ${selectedGhe.seatNumber}`,
+      })
+
+    } catch (error) {
+       toast({
+        title: "Lỗi",
+        description: "Không thể xóa ghế. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleteDialogOpen(false)
+      setSelectedGhe(null)
+    }
   }
 
   if (loading) {
@@ -414,6 +438,7 @@ export default function QuanLyGhePage() {
                 <SelectValue placeholder="Sắp xếp theo" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="ID">ID</SelectItem>
                 <SelectItem value="Tên số ghế">Tên số ghế</SelectItem>
                 <SelectItem value="Loại ghế">Loại ghế</SelectItem>
                 <SelectItem value="Giá">Giá</SelectItem>
@@ -482,14 +507,6 @@ export default function QuanLyGhePage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetail(seat.id)}
-                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                        >
-                          Xem
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

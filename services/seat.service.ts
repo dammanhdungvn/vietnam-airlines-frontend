@@ -37,3 +37,48 @@ export const getSeatsInfo = async (params: GetSeatsInfoParams): Promise<IPaginat
     throw error;
   }
 };
+
+/**
+ * @interface UpdateSeatPayload
+ * @description Định nghĩa payload cho việc cập nhật thông tin ghế.
+ */
+export interface UpdateSeatPayload {
+  id: number;
+  seatNumber: string;
+  type: string;
+  basePrice: number;
+  paidPrice: number;
+}
+
+/**
+ * @function updateSeat
+ * @description Cập nhật thông tin một ghế thông qua API.
+ * @param {UpdateSeatPayload} payload - Dữ liệu ghế cần cập nhật.
+ * @returns {Promise<void>}
+ * @throws {Error} Ném ra lỗi nếu yêu cầu API thất bại.
+ */
+export const updateSeat = async (payload: UpdateSeatPayload): Promise<void> => {
+  try {
+    await api.post('/seats', payload);
+  } catch (error) {
+    console.error('Không thể cập nhật thông tin ghế:', error);
+    throw error;
+  }
+};
+
+
+/**
+ * @function deleteSeat
+ * @description Xóa một ghế thông qua API.
+ * @param {number} id - ID của ghế cần xóa.
+ * @returns {Promise<void>}
+ * @throws {Error} Ném ra lỗi nếu yêu cầu API thất bại.
+ */
+export const deleteSeat = async (id: number): Promise<void> => {
+  try {
+    await api.delete(`/seats/${id}`);
+  } catch (error) {
+    console.error('Không thể xóa ghế:', error);
+    throw error;
+  }
+};
