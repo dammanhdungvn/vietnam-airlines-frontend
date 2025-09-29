@@ -143,13 +143,19 @@ export default function QuanLyDoAnPage() {
       itemName: formData.itemName,
       price: price,
       description: formData.description,
-      image: imageFile,
+    }
+
+    const updatePayload = {
+      id: selectedDoAn?.id,
+      itemName: formData.itemName,
+      price: price,
+      description: formData.description,
     }
 
     try {
       if (selectedDoAn) {
         // Chế độ chỉnh sửa
-        await updateItem({ ...payload, id: selectedDoAn.id })
+        await updateItem(updatePayload)
         toast.success(`Đã cập nhật thông tin món ${formData.itemName}`)
       } else {
         // Chế độ thêm mới
