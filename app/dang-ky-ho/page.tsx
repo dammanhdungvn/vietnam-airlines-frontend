@@ -10,13 +10,25 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { StepIndicator } from "@/components/step-indicator"
 import { CustomerList } from "@/components/customer-list"
-import { SeatMap } from "@/components/seat-map"
+import { SeatMapInteractive } from "@/components/seat-map-interactive"
 import { FoodComboModal } from "@/components/food-combo-modal"
 import { SuccessModal } from "@/components/success-modal"
-import { User, Info, Plane, Utensils, Minus, Plus } from "lucide-react"
-import { GetPersonsParams, getPersonsPaginated } from "@/services/person.service"
-import { PaginatedApiResponse, Person } from "@/types/person.type"
+import { User, Info, Plane, Utensils, Minus, Plus, RefreshCw } from "lucide-react"
+import {
+  getPersonsPaginated,
+  validateAndUploadFace,
+  registerPerson,
+} from "@/services/person.service"
+import {
+  PaginatedApiResponse,
+  Person,
+  RegistrationPayload,
+} from "@/types/person.type"
 import { toast } from "@/hooks/use-toast"
+import { ISeat } from "@/types/seat.type"
+import { getSeatsInfo } from "@/services/seat.service"
+import { IItem, IItemData } from "@/types/item.type"
+import { getItems } from "@/services/item.service"
 
 interface FoodCombo {
   id: number
@@ -39,64 +51,29 @@ export default function DangKyHoPage() {
     name: "NGUYEN VAN A",
     email: "nguyenvana@email.com",
   })
-  const [autoRegister, setAutoRegister] = useState(false)
-  const [faceIdImage, setFaceIdImage] = useState<string | null>(null)
+  const [hasAgreed, setHasAgreed] = useState(false)
+  const [faceIdImage, setFaceIdImage] = useState<File | null>(null)
+  const [faceIdImageUrl, setFaceIdImageUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [selectedCombo, setSelectedCombo] = useState<FoodCombo | null>(null)
+  const [isUploadingFace, setIsUploadingFace] = useState(false)
+  
+  // States for step 3: Seat selection
+  const [seats, setSeats] = useState<ISeat[]>([])
+  const [selectedSeat, setSelectedSeat] = useState<ISeat | null>(null)
+  const [isLoadingSeats, setIsLoadingSeats] = useState(false)
+
+  // States for step 4: Item selection
+  const [items, setItems] = useState<IItem[]>([])
+  const [selectedItems, setSelectedItems] = useState<Map<number, number>>(new Map()) // Map<itemId, quantity>
+  const [isLoadingItems, setIsLoadingItems] = useState(false)
+  
   const [showComboModal, setShowComboModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [personsResponse, setPersonsResponse] = useState<PaginatedApiResponse<Person> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const [combos, setCombos] = useState<FoodCombo[]>([
-    {
-      id: 1,
-      name: "Combo 1",
-      description: "bao gồm 1 nước 1 bim bim",
-      price: 40000,
-      image: "/snack-combo.jpg",
-      details:
-        "Lorem ipsum vens telelägt. Rejogt fara men fal eller sosösor inte nor. Mysös bibid, i senoledes hypovell. Eur joren visaktiga att endotet krolur. Prost aska om apomodern då trekvartspudel nos. Gigar selung för att vavovas, i homorenas kötin. Skamma hypongar bivis i tenejist ongen. Disysade sörat. Efterföljarsskap tör de bijan. Nuvänar tögärade. Netisonade reabel terak i prejybelt. Monorar deka",
-      quantity: 0,
-    },
-    {
-      id: 2,
-      name: "Combo 2",
-      description: "bao gồm 1 nước",
-      price: 15000,
-      image: "/refreshing-cola.png",
-      details: "Combo bao gồm 1 lon nước ngọt Coca Cola 330ml, thích hợp để giải khát trong suốt sự kiện.",
-      quantity: 0,
-    },
-    {
-      id: 3,
-      name: "Combo 3",
-      description: "thịt bò và rau",
-      price: 80000,
-      image: "/beef-and-vegetables.jpg",
-      details: "Combo thịt bò nướng với rau củ tươi ngon, bổ dưỡng và đầy đủ chất dinh dưỡng.",
-      quantity: 0,
-    },
-    {
-      id: 4,
-      name: "Combo 4",
-      description: "hamburger và khoai tây chiên",
-      price: 120000,
-      image: "/hamburger-and-fries.jpg",
-      details: "Hamburger thơm ngon với khoai tây chiên giòn rụm, món ăn nhanh được yêu thích.",
-      quantity: 0,
-    },
-    {
-      id: 5,
-      name: "Combo 5",
-      description: "phở và trà đá",
-      price: 100000,
-      image: "/pho-and-iced-tea.jpg",
-      details: "Tô phở Việt Nam truyền thống với nước dùng đậm đà, kèm theo ly trà đá mát lạnh.",
-      quantity: 0,
-    },
-  ])
-
+  // Remove hardcoded combos
+  
   // Hàm tải danh sách khách hàng
   const fetchPersons = async (params: GetPersonsParams = {}) => {
     setIsLoading(true)
@@ -119,7 +96,68 @@ export default function DangKyHoPage() {
     if (currentStep === 1) {
       fetchPersons()
     }
+    // Fetch seats for step 3
+    if (currentStep === 3 && seats.length === 0) {
+      fetchSeats()
+    }
+    // Fetch items for step 4
+    if (currentStep === 4 && items.length === 0) {
+      fetchItems()
+    }
   }, [currentStep])
+
+  /**
+   * @function fetchSeats
+   * @description Lấy dữ liệu tất cả các ghế cho sơ đồ.
+   */
+  const fetchSeats = async () => {
+    setIsLoadingSeats(true)
+    try {
+      // First call to get totalElements
+      const initialData = await getSeatsInfo({ page: 0, size: 1, sortBy: 'id', sortDir: 'asc' });
+      const totalElements = initialData.totalElements;
+
+      if (totalElements > 0) {
+        // Second call to get all seats
+        const allSeatsData = await getSeatsInfo({ page: 0, size: totalElements, sortBy: 'id', sortDir: 'asc' });
+        setSeats(allSeatsData.content);
+      }
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải sơ đồ ghế. Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingSeats(false)
+    }
+  }
+
+  /**
+   * @function fetchItems
+   * @description Lấy dữ liệu tất cả các sản phẩm.
+   */
+  const fetchItems = async () => {
+    setIsLoadingItems(true);
+    try {
+      const initialData = await getItems({ page: 0, size: 1 });
+      const totalElements = initialData.totalElements;
+
+      if (totalElements > 0) {
+        const allItemsData = await getItems({ page: 0, size: totalElements, sortBy: 'id', sortDir: 'asc' });
+        setItems(allItemsData.content);
+      }
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách sản phẩm. Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingItems(false);
+    }
+  };
+
 
   // Các bước trong quy trình đăng ký
   const steps = [
@@ -129,19 +167,107 @@ export default function DangKyHoPage() {
     { number: 4, title: "Khu trải nghiệm", subtitle: "Đồ ăn, thức uống trong hội nghị", icon: Utensils },
   ]
 
-  const handleNext = () => {
-    if (currentStep < 4) {
-      // Nếu đang ở bước 1, cập nhật thông tin khách hàng được chọn cho bước 2
-      if (currentStep === 1 && selectedCustomer) {
-        setCustomerInfo({
-          name: selectedCustomer.fullName,
-          email: selectedCustomer.email,
-        })
+  const handleNext = async () => {
+    // Step 1 validation
+    if (currentStep === 1) {
+      if (!selectedCustomer) {
+        toast({ title: "Vui lòng chọn một khách hàng", variant: "destructive" })
+        return
       }
+      setCustomerInfo({
+        name: selectedCustomer.fullName,
+        email: selectedCustomer.email,
+      })
+    }
+
+    // Step 2 validation and API call
+    if (currentStep === 2) {
+      if (!hasAgreed) {
+        toast({ title: "Bạn phải đồng ý với điều khoản", variant: "destructive" })
+        return
+      }
+      if (!faceIdImage || !selectedCustomer) {
+        toast({ title: "Vui lòng tải lên ảnh Face ID", variant: "destructive" })
+        return
+      }
+
+      setIsUploadingFace(true);
+      try {
+        const response = await validateAndUploadFace(selectedCustomer.personId, faceIdImage);
+        if (response.code === 200) {
+          toast({ title: "Xác thực khuôn mặt thành công" })
+        } else {
+          toast({ title: "Xác thực khuôn mặt thất bại", description: response.message, variant: "destructive" })
+          setIsUploadingFace(false)
+          return // Stop moving to next step
+        }
+      } catch (error) {
+        toast({ title: "Lỗi", description: "Có lỗi xảy ra khi tải ảnh lên.", variant: "destructive" })
+        setIsUploadingFace(false)
+        return // Stop moving to next step
+      } finally {
+        setIsUploadingFace(false)
+      }
+    }
+    
+    // Step 3 validation
+    if (currentStep === 3) {
+      if (!selectedSeat) {
+        toast({ title: "Vui lòng chọn một ghế ngồi", variant: "destructive" })
+        return
+      }
+    }
+
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
     } else {
-      // Hiển thị modal thành công khi hoàn thành
-      setShowSuccessModal(true)
+      // Final submission logic
+      if (!selectedCustomer) return;
+
+      const itemsPayload = Array.from(selectedItems.entries())
+        .filter(([, quantity]) => quantity > 0)
+        .map(([itemId, quantity]) => {
+          const item = items.find(i => i.id === itemId);
+          return {
+            itemId,
+            quantity,
+            paidAmount: (item?.price || 0) * quantity,
+          };
+        });
+
+      const registrationPayload: RegistrationPayload = {
+        email: customerInfo.email,
+        fullName: customerInfo.name,
+        position: selectedCustomer.position,
+        phone: selectedCustomer.phone,
+        gender: selectedCustomer.gender,
+        status: selectedCustomer.status,
+        seatInfo: selectedSeat ? {
+          seatNumber: selectedSeat.seatNumber,
+          paidPrice: selectedSeat.basePrice,
+        } : null,
+        items: itemsPayload,
+      };
+
+      try {
+        const response = await registerPerson(registrationPayload);
+        if (response.code === 200) {
+          setShowSuccessModal(true);
+        } else {
+           toast({
+            title: "Đăng ký thất bại",
+            description: response.message || "Dữ liệu không hợp lệ.",
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || "Có lỗi xảy ra khi đăng ký."
+        toast({
+          title: "Lỗi",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     }
   }
 
@@ -170,12 +296,24 @@ export default function DangKyHoPage() {
     )
   }
 
+  const updateItemQuantity = (itemId: number, change: number) => {
+    const newQuantity = Math.max(0, (selectedItems.get(itemId) || 0) + change);
+    const newSelectedItems = new Map(selectedItems);
+    if (newQuantity === 0) {
+      newSelectedItems.delete(itemId);
+    } else {
+      newSelectedItems.set(itemId, newQuantity);
+    }
+    setSelectedItems(newSelectedItems);
+  };
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      setFaceIdImage(file) // Store the File object
       const reader = new FileReader()
       reader.onload = (e) => {
-        setFaceIdImage(e.target?.result as string)
+        setFaceIdImageUrl(e.target?.result as string)
       }
       reader.readAsDataURL(file)
     }
@@ -223,14 +361,14 @@ export default function DangKyHoPage() {
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-medium">Đăng ký nhận điện tử động</h3>
+              <h3 className="font-medium">Đăng ký nhận diện tự động</h3>
               <p className="text-sm text-gray-600">
-                * Anh được dùng để hỗ thông nhận điện khi ban đến Hội nghị, giúp thu tục check-in diễn ra nhanh và thuận
+                * Ảnh được dùng để hỗ trợ nhận diện khi bạn đến Hội nghị, giúp thủ tục check-in diễn ra nhanh và thuận
                 tiện hơn. Thông tin sẽ được quản lý an toàn và được xóa bỏ ngay khi sự kiện kết thúc.
               </p>
               <div className="flex items-center space-x-2">
-                <Checkbox id="auto-register" checked={autoRegister} onCheckedChange={setAutoRegister} />
-                <Label htmlFor="auto-register" className="text-sm">
+                <Checkbox id="agreement" checked={hasAgreed} onCheckedChange={(checked) => setHasAgreed(checked as boolean)} />
+                <Label htmlFor="agreement" className="text-sm">
                   Tôi đồng ý đăng ký nhận thông tin tự động
                 </Label>
               </div>
@@ -241,10 +379,10 @@ export default function DangKyHoPage() {
               onClick={handleImageClick}
             >
               <CardContent className="flex items-center justify-center py-12">
-                {faceIdImage ? (
+                {faceIdImageUrl ? (
                   <div className="text-center">
                     <img
-                      src={faceIdImage || "/placeholder.svg"}
+                      src={faceIdImageUrl}
                       alt="Face ID"
                       className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
                     />
@@ -266,69 +404,82 @@ export default function DangKyHoPage() {
           </div>
         )
       case 3:
-        return <SeatMap />
+        return (
+          <SeatMapInteractive 
+            seats={seats}
+            selectedSeat={selectedSeat}
+            onSelectSeat={setSelectedSeat}
+            isLoading={isLoadingSeats}
+          />
+        );
       case 4:
         return (
           <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {combos.map((combo) => (
-                <Card
-                  key={combo.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => handleComboClick(combo)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <img
-                        src={combo.image || "/placeholder.svg"}
-                        alt={combo.name}
-                        className="w-12 h-12 rounded object-cover"
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{combo.name}</h3>
-                        <p className="text-sm text-gray-600">{combo.description}</p>
+            {isLoadingItems ? (
+               <div className="flex items-center justify-center h-64">
+                <div className="text-center" role="status">
+                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-500" />
+                  <p className="text-gray-600">Đang tải sản phẩm...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {items.map((item) => (
+                  <Card
+                    key={item.id}
+                    className="flex flex-col"
+                  >
+                    <CardContent className="p-4 flex flex-col flex-grow">
+                      <div className="flex-grow">
+                        <h3 className="font-semibold">{item.itemName}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-lg">{combo.price.toLocaleString()}đ</span>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            updateComboQuantity(combo.id, -1)
-                          }}
-                          disabled={combo.quantity === 0}
-                          className="w-8 h-8 p-0"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                        <span className="w-8 text-center font-semibold">{combo.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            updateComboQuantity(combo.id, 1)
-                          }}
-                          className="w-8 h-8 p-0 text-yellow-600 border-yellow-600 hover:bg-yellow-50"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
+                      <div className="flex items-center justify-between mt-4">
+                        <span className="font-bold text-lg text-orange-600">{item.price.toLocaleString('vi-VN')}đ</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateItemQuantity(item.id, -1);
+                            }}
+                            disabled={(selectedItems.get(item.id) || 0) === 0}
+                            className="w-8 h-8 p-0"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </Button>
+                          <span className="w-8 text-center font-semibold">{selectedItems.get(item.id) || 0}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateItemQuantity(item.id, 1);
+                            }}
+                            className="w-8 h-8 p-0"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )
       default:
         return null
     }
+  }
+
+  const isNextButtonDisabled = () => {
+    if (currentStep === 1 && !selectedCustomer) return true;
+    if (currentStep === 2 && (!hasAgreed || !faceIdImage)) return true;
+    if (currentStep === 3 && !selectedSeat) return true;
+    return isUploadingFace;
   }
 
   return (
@@ -349,20 +500,11 @@ export default function DangKyHoPage() {
         <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
           Bỏ qua
         </Button>
-        <Button onClick={handleNext} className="bg-orange-500 hover:bg-orange-600">
-          {currentStep === 4 ? "Hoàn tất" : "Tiếp tục"}
+        <Button onClick={handleNext} className="bg-orange-500 hover:bg-orange-600" disabled={isUploadingFace}>
+          {isUploadingFace ? 'Đang xử lý...' : (currentStep === 4 ? "Hoàn tất" : "Tiếp tục")}
         </Button>
       </div>
-
-      {selectedCombo && (
-        <FoodComboModal
-          isOpen={showComboModal}
-          onClose={() => setShowComboModal(false)}
-          combo={selectedCombo}
-          onConfirm={handleComboConfirm}
-        />
-      )}
-
+      
       <SuccessModal
         isOpen={showSuccessModal}
         onClose={() => {

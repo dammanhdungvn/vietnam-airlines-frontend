@@ -51,3 +51,56 @@ export const getPersonsPaginated = async (
     throw error;
   }
 };
+
+
+/**
+ * @function validateAndUploadFace
+ * @description Gửi ảnh khuôn mặt để xác thực và tải lên.
+ * @param {string} personId - ID của khách hàng.
+ * @param {File} faceImage - File ảnh khuôn mặt.
+ * @returns {Promise<StreamApiResponse<FaceValidationResponseData>>} Phản hồi từ API xác thực.
+ */
+export const validateAndUploadFace = async (
+  personId: string,
+  faceImage: File
+): Promise<StreamApiResponse<FaceValidationResponseData>> => {
+  const formData = new FormData();
+  formData.append("faceImage", faceImage);
+
+  try {
+    const response = await api.post<StreamApiResponse<FaceValidationResponseData>>(
+      `/core/persons/valid-upload-face`,
+      formData,
+      {
+        params: {
+          personId,
+          acsDevIndexCode: 90,
+        },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi xác thực khuôn mặt:", error);
+    throw error;
+  }
+};
+
+
+/**
+ * @function registerPerson
+ * @description Gửi thông tin đăng ký hoàn chỉnh cho một khách hàng.
+ * @param {RegistrationPayload} payload - Dữ liệu đăng ký.
+ * @returns {Promise<any>} Phản hồi từ API đăng ký.
+ */
+export const registerPerson = async (payload: RegistrationPayload): Promise<any> => {
+  try {
+    const response = await api.post("/core/persons/registration", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi đăng ký:", error);
+    throw error;
+  }
+};

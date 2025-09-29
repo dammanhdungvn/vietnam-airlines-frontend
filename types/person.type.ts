@@ -42,3 +42,43 @@ export interface PaginatedApiResponse<T> {
   first: boolean;
   last: boolean;
 }
+
+/**
+ * @interface FaceValidationResponseData
+ * @description Cấu trúc dữ liệu trả về khi xác thực khuôn mặt thành công.
+ */
+export interface FaceValidationResponseData {
+  personId: string;
+  message: string;
+  isValid: boolean;
+  isUploaded: boolean;
+  imageUrl: string; // base64
+}
+
+/**
+ * @interface RegistrationItem
+ * @description Cấu trúc của một sản phẩm trong payload đăng ký.
+ */
+export interface RegistrationItem {
+  itemId: number;
+  quantity: number;
+  paidAmount: number;
+}
+
+/**
+ * @interface RegistrationPayload
+ * @description Cấu trúc payload để gửi đi khi đăng ký khách hàng.
+ */
+export interface RegistrationPayload {
+  email: string;
+  fullName: string;
+  position: string;
+  phone: string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  status: boolean;
+  seatInfo: {
+    seatNumber: string;
+    paidPrice: number;
+  } | null;
+  items: RegistrationItem[];
+}
