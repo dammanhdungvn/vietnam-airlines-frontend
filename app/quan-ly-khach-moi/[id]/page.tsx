@@ -488,7 +488,7 @@ export default function ChiTietKhachMoiPage() {
                 />
                 <InfoField
                   label="Giá vé đã trả"
-                  value={person.seatInfo?.paidPrice.toLocaleString("vi-VN", { style: "currency", currency: "VND" }) || "0 VND"}
+                  value={(person.seatInfo?.paidPrice ?? 0).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
                   isEditMode={isEditMode}
                   type="number"
                   onChange={(e) => handleSeatInfoChange("paidPrice", Number(e.target.value))}

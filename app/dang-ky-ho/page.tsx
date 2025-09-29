@@ -84,17 +84,39 @@ export default function DangKyHoPage() {
   const [showComboModal, setShowComboModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [personsResponse, setPersonsResponse] = useState<PaginatedApiResponse<Person> | null>(null)
+  const [allPersons, setAllPersons] = useState<Person[]>([])
+  const [clientPage, setClientPage] = useState(0)
+  const [clientSize, setClientSize] = useState(10)
+  const [searchTermFull, setSearchTermFull] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<{ title: string; message: string } | null>(null)
 
   // Remove hardcoded combos
   
   // Hàm tải danh sách khách hàng
-  const fetchPersons = async (params: GetPersonsParams = {}) => {
+  const fetchPersonsFull = async () => {
     setIsLoading(true)
     try {
-      const data = await getPersonsPaginated(params)
-      setPersonsResponse(data)
+      const initial = await getPersonsPaginated({ page: 0, size: 1, sortBy: 'personId', sortDir: 'asc' })
+      const total = initial.totalElements || 0
+      if (total > 0) {
+        const all = await getPersonsPaginated({ page: 0, size: total, sortBy: 'personId', sortDir: 'asc' })
+        setAllPersons(all.content)
+        // dựng response phân trang đầu tiên theo client
+        const sliced = all.content.slice(0, clientSize)
+        setPersonsResponse({
+          content: sliced,
+          page: 0,
+          size: clientSize,
+          totalElements: all.content.length,
+          totalPages: Math.max(1, Math.ceil(all.content.length / clientSize)),
+          first: true,
+          last: all.content.length <= clientSize,
+        })
+      } else {
+        setAllPersons([])
+        setPersonsResponse({ content: [], page: 0, size: clientSize, totalElements: 0, totalPages: 0, first: true, last: true })
+      }
     } catch (error) {
       toast({
         title: "Lỗi",
@@ -108,8 +130,8 @@ export default function DangKyHoPage() {
 
   // Tải dữ liệu lần đầu
   useEffect(() => {
-    if (currentStep === 1) {
-      fetchPersons()
+    if (currentStep === 1 && allPersons.length === 0) {
+      fetchPersonsFull()
     }
     // Fetch seats for step 3
     if (currentStep === 3 && seats.length === 0) {
@@ -195,6 +217,34 @@ export default function DangKyHoPage() {
     return total;
   }, [selectedItems, items]);
 
+  const filterPersons = (list: Person[], keyword: string) => {
+    const kw = keyword.trim().toLowerCase()
+    if (!kw) return list
+    return list.filter(p =>
+      p.fullName.toLowerCase().includes(kw) ||
+      p.email.toLowerCase().includes(kw) ||
+      p.position.toLowerCase().includes(kw)
+    )
+  }
+
+  // Recompute client-side pagination when search term or page/size changes
+  useEffect(() => {
+    if (currentStep !== 1) return
+    const base = filterPersons(allPersons, searchTermFull)
+    const totalPages = Math.max(1, Math.ceil(base.length / clientSize))
+    const safePage = Math.min(clientPage, totalPages - 1)
+    const sliced = base.slice(safePage * clientSize, safePage * clientSize + clientSize)
+    setPersonsResponse({
+      content: sliced,
+      page: safePage,
+      size: clientSize,
+      totalElements: base.length,
+      totalPages: base.length === 0 ? 0 : totalPages,
+      first: safePage === 0,
+      last: safePage >= totalPages - 1,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTermFull, clientPage, clientSize, allPersons, currentStep])
 
   // Các bước trong quy trình đăng ký
   const steps = [
@@ -276,22 +326,36 @@ export default function DangKyHoPage() {
           };
         });
 
-      const registrationPayload: RegistrationPayload = {
-        email: customerInfo.email,
-        fullName: customerInfo.name,
+      // seatInfo: ưu tiên ghế mới nếu có; ngược lại dùng ghế cũ (nếu có)
+      const mergedSeatInfo = selectedSeat
+        ? { seatNumber: selectedSeat.seatNumber, paidPrice: selectedSeat.basePrice }
+        : (selectedCustomer.seatInfo
+            ? { seatNumber: selectedCustomer.seatInfo.seatNumber, paidPrice: selectedCustomer.seatInfo.paidPrice }
+            : null)
+
+      // DỮ LIỆU ĐẦY ĐỦ: lấy dữ liệu cũ làm baseline, override những trường người dùng chỉnh
+      const fullPayload: any = {
+        email: customerInfo.email || selectedCustomer.email,
+        fullName: customerInfo.name || selectedCustomer.fullName,
         position: selectedCustomer.position,
         phone: selectedCustomer.phone,
         gender: selectedCustomer.gender,
         status: selectedCustomer.status,
-        seatInfo: selectedSeat ? {
-          seatNumber: selectedSeat.seatNumber,
-          paidPrice: selectedSeat.basePrice,
-        } : null,
+        seatInfo: mergedSeatInfo,
         items: itemsPayload,
-      };
+      }
 
       try {
-        const response = await registerOrUpdatePerson(registrationPayload);
+        // Chuẩn hóa payload
+        const safePayload = {
+          ...fullPayload,
+          ...(fullPayload.gender ? { gender: String(fullPayload.gender).toUpperCase() } : {}),
+          ...(typeof fullPayload.status === 'boolean' ? { status: Boolean(fullPayload.status) } : {}),
+        }
+        if (!safePayload.seatInfo) delete (safePayload as any).seatInfo
+        if (!safePayload.items?.length) delete (safePayload as any).items
+
+        const response = await registerOrUpdatePerson(safePayload as any);
         if (response.code === 200) {
           setShowSuccessModal(true);
         } else {
@@ -377,7 +441,20 @@ export default function DangKyHoPage() {
             isLoading={isLoading}
             onSelect={setSelectedCustomer}
             selectedCustomer={selectedCustomer}
-            onPageChange={(page) => fetchPersons({ page })}
+            onPageChange={(page) => {
+              const base = filterPersons(allPersons, searchTermFull)
+              setClientPage(page)
+              const sliced = base.slice(page * clientSize, page * clientSize + clientSize)
+              setPersonsResponse({
+                content: sliced,
+                page,
+                size: clientSize,
+                totalElements: base.length,
+                totalPages: Math.max(1, Math.ceil(base.length / clientSize)),
+                first: page === 0,
+                last: page >= Math.max(1, Math.ceil(base.length / clientSize)) - 1,
+              })
+            }}
           />
         )
       case 2:

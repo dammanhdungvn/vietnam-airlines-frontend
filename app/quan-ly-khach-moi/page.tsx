@@ -39,6 +39,7 @@ export default function QuanLyKhachMoiPage() {
   const router = useRouter()
 
   const [persons, setPersons] = useState<Person[]>([])
+  const [allPersons, setAllPersons] = useState<Person[]>([])
   const [pagination, setPagination] = useState<Omit<PaginatedApiResponse<Person>, "content">>({
     page: 0,
     size: 10,
@@ -49,6 +50,7 @@ export default function QuanLyKhachMoiPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedTerm, setDebouncedTerm] = useState("")
   const [sortBy, setSortBy] = useState("personId")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -69,36 +71,27 @@ export default function QuanLyKhachMoiPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
-  const fetchPersons = useCallback(async () => {
+  const fetchPersonsFull = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await getPersonsPaginated({
-        page: pagination.page,
-        size: pagination.size,
-        sortBy: sortBy,
-        sortDir: sortDir,
-        // NOTE: API doesn't seem to support search term, filtering will be client-side for now
-      })
-      setPersons(data.content)
-      const computedTotalPages = data && data.size ? Math.max(1, Math.ceil((data.totalElements || 0) / data.size)) : 1
-      setPagination({
-        page: data.page,
-        size: data.size,
-        totalElements: data.totalElements,
-        totalPages: data.totalPages && data.totalPages > 0 ? data.totalPages : computedTotalPages,
-        first: data.first,
-        last: data.last,
-      })
+      const first = await getPersonsPaginated({ page: 0, size: 1, sortBy: sortBy, sortDir: sortDir })
+      const total = first.totalElements || 0
+      if (total > 0) {
+        const all = await getPersonsPaginated({ page: 0, size: total, sortBy: sortBy, sortDir: sortDir })
+        setAllPersons(all.content)
+      } else {
+        setAllPersons([])
+      }
     } catch (error) {
       toast.error("Không thể tải danh sách khách mời.")
     } finally {
       setIsLoading(false)
     }
-  }, [pagination.page, pagination.size, sortBy, sortDir])
+  }, [sortBy, sortDir])
 
   useEffect(() => {
-    fetchPersons()
-  }, [fetchPersons])
+    fetchPersonsFull()
+  }, [fetchPersonsFull])
 
   const translateGender = (gender: "MALE" | "FEMALE" | "OTHER" | string) => {
     switch (gender) {
@@ -125,7 +118,7 @@ export default function QuanLyKhachMoiPage() {
     try {
       await deletePerson(person.personId)
       toast.success(`Đã xóa khách mời "${person.fullName}".`)
-      fetchPersons() // Tải lại danh sách sau khi xóa
+      fetchPersonsFull() // Tải lại danh sách sau khi xóa
     } catch (error) {
       toast.error(`Không thể xóa khách mời "${person.fullName}".`)
     }
@@ -146,7 +139,7 @@ export default function QuanLyKhachMoiPage() {
       setIsImporting(true)
       await importPersons(file)
       toast.success("Đã nhập danh sách khách mời thành công.")
-      fetchPersons() // Tải lại danh sách
+      fetchPersonsFull() // Tải lại danh sách
     } catch (error) {
       toast.error("Không thể nhập danh sách khách mời từ file.")
     } finally {
@@ -207,7 +200,7 @@ export default function QuanLyKhachMoiPage() {
       })
       setAvatarFile(null)
       setIsAddModalOpen(false)
-      fetchPersons() // Tải lại danh sách
+      fetchPersonsFull() // Tải lại danh sách
     } catch (error) {
       toast.error("Không thể thêm khách mời mới. Vui lòng thử lại.")
     } finally {
@@ -219,12 +212,25 @@ export default function QuanLyKhachMoiPage() {
     setPagination((prev) => ({ ...prev, page: newPage }))
   }
 
-  const filteredPersons = persons.filter(
+  // Debounce search term (client-side) and reset to first page
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedTerm(searchTerm.trim())
+      setPagination((prev) => ({ ...prev, page: 0 }))
+    }, 300)
+    return () => clearTimeout(id)
+  }, [searchTerm])
+
+  const filteredPersons = (allPersons.length ? allPersons : persons).filter(
     (person) =>
       person.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       person.position.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  const clientTotalPages = Math.max(1, Math.ceil(filteredPersons.length / pagination.size))
+  const isFirstPage = pagination.page <= 0
+  const isLastPage = pagination.page >= clientTotalPages - 1
 
   return (
     <div className="min-h-screen">
@@ -320,7 +326,9 @@ export default function QuanLyKhachMoiPage() {
                   </tr>
                 ))
               ) : filteredPersons.length > 0 ? (
-                filteredPersons.map((person, idx) => (
+                filteredPersons
+                  .slice(pagination.page * pagination.size, pagination.page * pagination.size + pagination.size)
+                  .map((person, idx) => (
                   <tr key={person.personId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {pagination.page * pagination.size + idx + 1}
@@ -405,64 +413,40 @@ export default function QuanLyKhachMoiPage() {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination (client-side) */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-700">
             Hiển thị {pagination.page * pagination.size + 1} đến{" "}
-            {Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)} trong tổng số{" "}
-            {pagination.totalElements} khách mời
+            {Math.min((pagination.page + 1) * pagination.size, filteredPersons.length)} trong tổng số{" "}
+            {filteredPersons.length} khách mời
           </div>
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.first}
+              disabled={isFirstPage}
             >
               ← Trước
             </Button>
             <div className="flex items-center space-x-1">
-              {/* Logic hiển thị các nút trang */}
-              {Array.from({ length: pagination.totalPages }, (_, i) => i).map((pageIndex) => {
-                const pageNumber = pageIndex + 1
-                const isCurrent = pagination.page === pageIndex
-
-                // Logic để hiển thị giới hạn các nút trang và dấu "..."
-                if (
-                  pagination.totalPages <= 7 || // Hiển thị tất cả nếu ít hơn hoặc bằng 7 trang
-                  pageIndex < 3 || // Luôn hiển thị 3 trang đầu
-                  pageIndex > pagination.totalPages - 4 || // Luôn hiển thị 3 trang cuối
-                  Math.abs(pagination.page - pageIndex) < 2 // Luôn hiển thị trang hiện tại và các trang lân cận
-                ) {
-                  return (
-                    <Button
-                      key={pageNumber}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(pageIndex)}
-                      className={isCurrent ? "bg-orange-500 text-white" : ""}
-                    >
-                      {pageNumber}
-                    </Button>
-                  )
-                } else if (
-                  (pageIndex === 3 && pagination.page > 4) ||
-                  (pageIndex === pagination.totalPages - 4 && pagination.page < pagination.totalPages - 5)
-                ) {
-                  return (
-                    <span key={`dots-${pageIndex}`} className="text-sm text-gray-500 px-2">
-                      ...
-                    </span>
-                  )
-                }
-                return null
-              })}
+              {Array.from({ length: clientTotalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant="outline"
+                  size="sm"
+                  className={pagination.page + 1 === page ? "bg-orange-500 text-white" : ""}
+                  onClick={() => handlePageChange(page - 1)}
+                >
+                  {page}
+                </Button>
+              ))}
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.last}
+              disabled={isLastPage}
             >
               Sau →
             </Button>

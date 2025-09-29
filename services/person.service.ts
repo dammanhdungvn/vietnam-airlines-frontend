@@ -159,13 +159,31 @@ export const registerOrUpdatePerson = async (
   payload: RegistrationPayload,
 ): Promise<any> => {
   try {
-    const response = await api.post("/core/persons/registration", payload);
-    return response.data;
-  } catch (error) {
-    console.error("Lỗi khi đăng ký hoặc cập nhật khách hàng:", error);
-    throw error;
+    // Chuẩn hóa payload để tránh 400 từ backend khi các trường rỗng/null
+    const body: any = { ...payload }
+    if (!payload.seatInfo) {
+      delete body.seatInfo
+    }
+    if (!payload.items || payload.items.length === 0) {
+      delete body.items
+    }
+    // Chuẩn hóa gender
+    if (body.gender) body.gender = String(body.gender).toUpperCase()
+    // Chuẩn hóa status boolean
+    body.status = Boolean(payload.status)
+
+    const response = await api.post("/core/persons/registration", body)
+    return response.data
+  } catch (error: any) {
+    // Không log AxiosError 400 ra console để tránh spam devtools
+    const fallback = { code: 400, message: "Bad Request", data: null }
+    if (error?.response?.data) {
+      const data = error.response.data
+      return typeof data === "object" && data !== null ? data : fallback
+    }
+    return fallback
   }
-};
+}
 
 /**
  * @function addPerson
