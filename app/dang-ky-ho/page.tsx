@@ -26,7 +26,7 @@ import { User, Info, Plane, Utensils, Minus, Plus, RefreshCw } from "lucide-reac
 import {
   getPersonsPaginated,
   validateAndUploadFace,
-  registerPerson,
+  registerOrUpdatePerson,
 } from "@/services/person.service"
 import {
   PaginatedApiResponse,
@@ -268,7 +268,7 @@ export default function DangKyHoPage() {
       };
 
       try {
-        const response = await registerPerson(registrationPayload);
+        const response = await registerOrUpdatePerson(registrationPayload);
         if (response.code === 200) {
           setShowSuccessModal(true);
         } else {
@@ -301,7 +301,6 @@ export default function DangKyHoPage() {
   }
 
   const handleComboClick = (combo: FoodCombo) => {
-    setSelectedCombo(combo)
     setShowComboModal(true)
   }
 

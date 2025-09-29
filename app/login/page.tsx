@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import { login } from "@/services/auth.service"
 import { ILoginPayload } from "@/types/auth.type"
 import { useAuth } from "@/context/AuthContext"
+import planeImage from "../../public/vietnam-airlines-plane-flying-in-blue-sky.jpg";
 
 /**
  * @fileoverview Trang Đăng nhập của hệ thống.
@@ -140,13 +141,13 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="flex-1 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center p-8 relative overflow-hidden">
+      <div className="flex-1 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center p-8 relative overflow-hidden">
         {/* Máy bay Vietnam Airlines */}
-        <div className="absolute top-1/4 right-1/4 transform rotate-12">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-3/4 -scale-x-100">
           <img
-            src="/vietnam-airlines-plane-flying-in-blue-sky.jpg"
+            src={planeImage.src}
             alt="Vietnam Airlines Aircraft"
-            className="w-80 h-auto opacity-90"
+            className="w-100 h-auto opacity-90 "
           />
         </div>
 

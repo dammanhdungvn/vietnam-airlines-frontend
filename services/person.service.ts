@@ -7,7 +7,13 @@
  */
 
 import api from "@/lib/api";
-import { PaginatedApiResponse, Person } from "@/types/person.type";
+import {
+  PaginatedApiResponse,
+  Person,
+  RegistrationPayload,
+  AddPersonPayload,
+  FaceValidationResponseData,
+} from "@/types/person.type";
 import { StreamApiResponse } from "@/types/stream.type";
 
 /**
@@ -52,6 +58,61 @@ export const getPersonsPaginated = async (
   }
 };
 
+/**
+ * @function getPersonByEmail
+ * @description Lấy thông tin chi tiết của một khách hàng bằng Email.
+ * @param {string} email - Email của khách hàng.
+ * @returns {Promise<Person>} Một promise giải quyết với dữ liệu chi tiết của khách hàng.
+ */
+export const getPersonByEmail = async (email: string): Promise<Person> => {
+  try {
+    const response = await api.get<StreamApiResponse<Person>>(
+      `/core/persons/registration/${email}`,
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(`Không thể lấy thông tin khách hàng với Email ${email}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * @function deletePerson
+ * @description Xóa một khách hàng bằng ID.
+ * @param {string} id - ID của khách hàng cần xóa.
+ * @returns {Promise<void>} Một promise giải quyết khi khách hàng được xóa thành công.
+ */
+export const deletePerson = async (id: string): Promise<void> => {
+  try {
+    await api.delete(`/core/persons/${id}`);
+  } catch (error) {
+    console.error(`Lỗi khi xóa khách hàng với ID ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * @function importPersons
+ * @description Nhập danh sách khách hàng từ file Excel.
+ * @param {File} file - File Excel chứa danh sách khách hàng.
+ * @returns {Promise<any>} Phản hồi từ API.
+ */
+export const importPersons = async (file: File): Promise<any> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await api.post("/core/persons/import", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi nhập danh sách khách hàng:", error);
+    throw error;
+  }
+};
 
 /**
  * @function validateAndUploadFace
@@ -88,19 +149,36 @@ export const validateAndUploadFace = async (
   }
 };
 
-
 /**
- * @function registerPerson
- * @description Gửi thông tin đăng ký hoàn chỉnh cho một khách hàng.
- * @param {RegistrationPayload} payload - Dữ liệu đăng ký.
- * @returns {Promise<any>} Phản hồi từ API đăng ký.
+ * @function registerOrUpdatePerson
+ * @description Gửi thông tin đăng ký hoặc cập nhật cho một khách hàng.
+ * @param {RegistrationPayload} payload - Dữ liệu đăng ký hoặc cập nhật.
+ * @returns {Promise<any>} Phản hồi từ API.
  */
-export const registerPerson = async (payload: RegistrationPayload): Promise<any> => {
+export const registerOrUpdatePerson = async (
+  payload: RegistrationPayload,
+): Promise<any> => {
   try {
     const response = await api.post("/core/persons/registration", payload);
     return response.data;
   } catch (error) {
-    console.error("Lỗi khi đăng ký:", error);
+    console.error("Lỗi khi đăng ký hoặc cập nhật khách hàng:", error);
+    throw error;
+  }
+};
+
+/**
+ * @function addPerson
+ * @description Thêm một khách hàng mới.
+ * @param {AddPersonPayload} payload - Dữ liệu của khách hàng mới.
+ * @returns {Promise<any>} Phản hồi từ API.
+ */
+export const addPerson = async (payload: AddPersonPayload): Promise<any> => {
+  try {
+    const response = await api.post("/core/persons", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi thêm khách hàng:", error);
     throw error;
   }
 };

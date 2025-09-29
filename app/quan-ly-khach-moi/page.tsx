@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useMemo, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Search, Filter, Upload, Plus, Star, Trash2, Edit, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,6 +25,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
+import { getPersonsPaginated, deletePerson, importPersons, addPerson, validateAndUploadFace } from "@/services/person.service"
+import { Person, PaginatedApiResponse, AddPersonPayload } from "@/types/person.type"
+import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 /**
  * Trang Quản lý khách mời
@@ -33,313 +37,252 @@ import { useRouter } from "next/navigation"
  */
 export default function QuanLyKhachMoiPage() {
   const router = useRouter()
+  const { toast } = useToast()
+  const [persons, setPersons] = useState<Person[]>([])
+  const [pagination, setPagination] = useState<Omit<PaginatedApiResponse<Person>, "content">>({
+    page: 0,
+    size: 10,
+    totalElements: 0,
+    totalPages: 0,
+    first: true,
+    last: false,
+  })
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedFilters, setSelectedFilters] = useState<string[]>(["Trạng thái", "VIP"])
-  const [sortBy, setSortBy] = useState("Tên")
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedGuest, setSelectedGuest] = useState<any>(null)
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string>("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const [formData, setFormData] = useState({
-    personId: "",
+  const [sortBy, setSortBy] = useState("personId")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [newPersonData, setNewPersonData] = useState<AddPersonPayload>({
     email: "",
     fullName: "",
     phone: "",
     position: "",
-    seatId: 0,
-    avatarUrl: "",
+    avatarUrl: "", // Sẽ được cập nhật sau khi upload avatar
     status: "TRUE",
-    isVip: "TRUE",
+    isVip: "NORMAL",
     gender: "MALE",
   })
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
 
-  const availableFilters = [
-    { id: "Trạng thái", label: "Trạng thái" },
-    { id: "VIP", label: "VIP" },
-    { id: "Giới tính", label: "Giới tính" },
-    { id: "Chức vụ", label: "Chức vụ" },
-  ]
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
-  // Dữ liệu mẫu khách mời
-  const khachMoi = [
-    {
-      id: 1,
-      ten: "Tran Phuong Thao",
-      email: "tpt@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Giám đốc chi nhánh",
-      gioiTinh: "Nam",
-      trangThai: "Đã đăng ký",
-      isVIP: true,
-      avatar: "/woman-avatar.png",
-    },
-    {
-      id: 2,
-      ten: "Nguyen Van A",
-      email: "nguyenvana@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Quản lý cơ sở 1",
-      gioiTinh: "Nam",
-      trangThai: "Hủy đăng ký",
-      isVIP: true,
-      avatar: "/man-avatar.png",
-    },
-    {
-      id: 3,
-      ten: "Nguyen Van B",
-      email: "nguyenvanb@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Nhân viên phòng",
-      gioiTinh: "Khác",
-      trangThai: "Đã đăng ký",
-      isVIP: false,
-      avatar: "/diverse-person-avatar.png",
-    },
-    {
-      id: 4,
-      ten: "Nguyen Van C",
-      email: "nguyenvanc@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Chức vụ 1",
-      gioiTinh: "Nữ",
-      trangThai: "Hủy đăng ký",
-      isVIP: false,
-      avatar: "/woman-avatar.png",
-    },
-    {
-      id: 5,
-      ten: "Nguyen Van D",
-      email: "nguyenvand@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Chức vụ 2",
-      gioiTinh: "Nữ",
-      trangThai: "Hủy đăng ký",
-      isVIP: true,
-      avatar: "/woman-avatar.png",
-    },
-    {
-      id: 6,
-      ten: "Nguyen Van E",
-      email: "nguyenvane@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Chức vụ 3",
-      gioiTinh: "Khác",
-      trangThai: "Đã đăng ký",
-      isVIP: false,
-      avatar: "/diverse-person-avatar.png",
-    },
-    {
-      id: 7,
-      ten: "Nguyen Van F",
-      email: "nguyenvanf@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Chức vụ 4",
-      gioiTinh: "Nữ",
-      trangThai: "Hủy đăng ký",
-      isVIP: true,
-      avatar: "/woman-avatar.png",
-    },
-    {
-      id: 8,
-      ten: "Nguyen Van G",
-      email: "nguyenvang@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Chức vụ 5",
-      gioiTinh: "Nữ",
-      trangThai: "Đã đăng ký",
-      isVIP: false,
-      avatar: "/woman-avatar.png",
-    },
-    {
-      id: 9,
-      ten: "Nguyen Van H",
-      email: "nguyenvanh@gmail.com",
-      soDienThoai: "0323 448 448",
-      chucVu: "Chức vụ 6",
-      gioiTinh: "Nam",
-      trangThai: "Hủy đăng ký",
-      isVIP: true,
-      avatar: "/man-avatar.png",
-    },
-  ]
-
-  const filteredKhachMoi = useMemo(() => {
-    let filtered = khachMoi
-
-    // Filter theo search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (khach) =>
-          khach.ten.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          khach.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          khach.chucVu.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
+  const fetchPersons = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const data = await getPersonsPaginated({
+        page: pagination.page,
+        size: pagination.size,
+        sortBy: sortBy,
+        sortDir: sortDir,
+        // NOTE: API doesn't seem to support search term, filtering will be client-side for now
+      })
+      setPersons(data.content)
+      const computedTotalPages = data && data.size ? Math.max(1, Math.ceil((data.totalElements || 0) / data.size)) : 1
+      setPagination({
+        page: data.page,
+        size: data.size,
+        totalElements: data.totalElements,
+        totalPages: data.totalPages && data.totalPages > 0 ? data.totalPages : computedTotalPages,
+        first: data.first,
+        last: data.last,
+      })
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách khách mời.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
+  }, [pagination.page, pagination.size, sortBy, sortDir, toast])
 
-    // Filter theo VIP nếu được chọn
-    if (selectedFilters.includes("VIP")) {
-      filtered = filtered.filter((khach) => khach.isVIP)
+  useEffect(() => {
+    fetchPersons()
+  }, [fetchPersons])
+
+  const translateGender = (gender: "MALE" | "FEMALE" | "OTHER" | string) => {
+    switch (gender) {
+      case "MALE":
+        return "Nam"
+      case "FEMALE":
+        return "Nữ"
+      case "OTHER":
+        return "Khác"
+      default:
+        return gender
     }
-
-    // Filter theo trạng thái nếu được chọn
-    if (selectedFilters.includes("Trạng thái")) {
-      filtered = filtered.filter((khach) => khach.trangThai === "Đã đăng ký")
-    }
-
-    if (selectedFilters.includes("Giới tính")) {
-      filtered = filtered.filter((khach) => khach.gioiTinh === "Nam")
-    }
-
-    if (selectedFilters.includes("Chức vụ")) {
-      filtered = filtered.filter((khach) => khach.chucVu.includes("Giám đốc"))
-    }
-
-    // Sort theo tiêu chí được chọn
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "Tên":
-          return a.ten.localeCompare(b.ten)
-        case "Email":
-          return a.email.localeCompare(b.email)
-        case "Chức vụ":
-          return a.chucVu.localeCompare(b.chucVu)
-        default:
-          return 0
-      }
-    })
-
-    return filtered
-  }, [searchTerm, selectedFilters, sortBy])
-
-  const removeFilter = (filter: string) => {
-    setSelectedFilters(selectedFilters.filter((f) => f !== filter))
   }
 
-  const toggleFilter = (filterId: string) => {
-    setSelectedFilters((prev) => (prev.includes(filterId) ? prev.filter((f) => f !== filterId) : [...prev, filterId]))
+  const handleViewDetails = (personEmail: string) => {
+    router.push(`/quan-ly-khach-moi/${personEmail}`)
   }
 
-  const handleViewDetails = (khachId: number) => {
-    router.push(`/quan-ly-khach-moi/${khachId}`)
+  const handleEditGuest = (personEmail: string) => {
+    router.push(`/quan-ly-khach-moi/${personEmail}`)
   }
 
-  const handleInputChange = (field: string, value: string | number) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+  const handleDeleteGuest = async (person: Person) => {
+    try {
+      await deletePerson(person.personId)
+      toast({
+        title: "Thành công",
+        description: `Đã xóa khách mời "${person.fullName}".`,
+        variant: "default",
+      })
+      fetchPersons() // Tải lại danh sách sau khi xóa
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể xóa khách mời "${person.fullName}".`,
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTriggerImport = () => {
+    if (isImporting) return
+    fileInputRef.current?.click()
+  }
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      toast({
+        title: "Thông báo",
+        description: "Bạn chưa chọn file để import.",
+      })
+      return
+    }
+    try {
+      setIsImporting(true)
+      await importPersons(file)
+      toast({
+        title: "Thành công",
+        description: "Đã nhập danh sách khách mời thành công.",
+        variant: "default",
+      })
+      fetchPersons() // Tải lại danh sách
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể nhập danh sách khách mời từ file.",
+        variant: "destructive",
+      })
+    } finally {
+      // Reset input & state
+      event.target.value = ""
+      setIsImporting(false)
+    }
+  }
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       setAvatarFile(file)
+      // Tạo preview URL cho avatar
       const reader = new FileReader()
       reader.onload = (e) => {
-        const result = e.target?.result as string
-        setAvatarPreview(result)
-        setFormData((prev) => ({
-          ...prev,
-          avatarUrl: result, // Lưu base64 string vào avatarUrl
-        }))
+        setNewPersonData(prev => ({ ...prev, avatarUrl: e.target?.result as string }))
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const handleClickUpload = () => {
-    fileInputRef.current?.click()
+  const handleAddSubmit = async () => {
+    // Basic validation
+    if (!newPersonData.fullName || !newPersonData.email) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng điền các trường bắt buộc (Họ tên, Email).",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      // Bước 1: Tạo người dùng trước theo schema mới (không có personId)
+      const createResponse = await addPerson(newPersonData)
+      
+      // Bước 2: Nếu có avatar file và tạo thành công, upload avatar
+      if (avatarFile && createResponse?.data?.personId) {
+        try {
+          await validateAndUploadFace(createResponse.data.personId, avatarFile)
+          toast({
+            title: "Thành công",
+            description: "Đã thêm khách mời mới và upload avatar thành công.",
+          })
+        } catch (avatarError) {
+          // Nếu upload avatar thất bại nhưng tạo người dùng thành công
+          toast({
+            title: "Cảnh báo",
+            description: "Đã thêm khách mời mới nhưng upload avatar thất bại. Bạn có thể cập nhật avatar sau.",
+            variant: "destructive",
+          })
+        }
+      } else {
+        toast({
+          title: "Thành công",
+          description: "Đã thêm khách mời mới.",
+        })
+      }
+      
+      // Reset form và đóng modal
+      setNewPersonData({
+        email: "",
+        fullName: "",
+        phone: "",
+        position: "",
+        avatarUrl: "",
+        status: "TRUE",
+        isVip: "NORMAL",
+        gender: "MALE",
+      })
+      setAvatarFile(null)
+      setIsAddModalOpen(false)
+      fetchPersons() // Tải lại danh sách
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể thêm khách mời mới. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleSubmitForm = () => {
-    console.log("Thêm khách mời:", formData)
-    console.log("Avatar file:", avatarFile)
-    // Logic thêm khách mời vào database
-    setShowAddModal(false)
-    resetForm()
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }))
   }
 
-  const handleEditGuest = (guest: any) => {
-    setSelectedGuest(guest)
-    setFormData({
-      personId: `GUEST${guest.id.toString().padStart(3, "0")}`,
-      email: guest.email,
-      fullName: guest.ten,
-      phone: guest.soDienThoai,
-      position: guest.chucVu,
-      seatId: guest.id,
-      avatarUrl: guest.avatar,
-      status: guest.trangThai === "Đã đăng ký" ? "TRUE" : "FALSE",
-      isVip: guest.isVIP ? "TRUE" : "FALSE",
-      gender: guest.gioiTinh === "Nam" ? "MALE" : guest.gioiTinh === "Nữ" ? "FEMALE" : "OTHER",
-    })
-    setAvatarPreview(guest.avatar)
-    setShowEditModal(true)
-  }
-
-  const handleEditSubmit = () => {
-    console.log("Sửa khách mời:", formData, selectedGuest)
-    // Logic cập nhật khách mời trong database
-    setShowEditModal(false)
-    resetForm()
-    setSelectedGuest(null)
-  }
-
-  const handleDeleteGuest = (guest: any) => {
-    console.log("Xóa khách mời:", guest)
-    // Logic xóa khách mời khỏi database
-  }
-
-  const resetForm = () => {
-    setFormData({
-      personId: "",
-      email: "",
-      fullName: "",
-      phone: "",
-      position: "",
-      seatId: 0,
-      avatarUrl: "",
-      status: "TRUE",
-      isVip: "TRUE",
-      gender: "MALE",
-    })
-    setAvatarFile(null)
-    setAvatarPreview("")
-  }
-
-  const handleImportFile = () => {
-    // Tạo file mẫu CSV để download
-    const csvContent = `personId,email,fullName,phone,position,seatId,avatarUrl,status,isVip,gender
-GUEST001,example@email.com,Nguyen Van A,0123456789,Manager,1,/avatar.png,TRUE,TRUE,MALE
-GUEST002,example2@email.com,Tran Thi B,0987654321,Staff,2,/avatar2.png,TRUE,FALSE,FEMALE`
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", "import_khach_moi_template.csv")
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+  const filteredPersons = persons.filter(
+    (person) =>
+      person.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.position.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
 
   return (
     <div className="min-h-screen">
+      <input ref={fileInputRef} type="file" accept=".xlsx, .xls" onChange={handleImportFile} className="hidden" />
+      <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý khách mời</h1>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm" onClick={handleImportFile}>
+          <Button variant="outline" size="sm" onClick={handleTriggerImport} disabled={isImporting}>
             <Upload className="w-4 h-4 mr-2" />
-            Import
+            {isImporting ? "Đang import..." : "Import"}
           </Button>
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={() => setShowAddModal(true)}>
+          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={() => setIsAddModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Thêm mới
           </Button>
@@ -348,50 +291,27 @@ GUEST002,example2@email.com,Tran Thi B,0987654321,Staff,2,/avatar2.png,TRUE,FALS
 
       {/* Filters */}
       <div className="flex items-center space-x-4 mb-6">
-        {selectedFilters.map((filter) => (
-          <Badge key={filter} variant="secondary" className="px-3 py-1">
-            {filter}
-            <button onClick={() => removeFilter(filter)} className="ml-2 text-gray-500 hover:text-gray-700">
-              ×
-            </button>
-          </Badge>
-        ))}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
-              More filters
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            {availableFilters.map((filter) => (
-              <DropdownMenuCheckboxItem
-                key={filter.id}
-                checked={selectedFilters.includes(filter.id)}
-                onCheckedChange={() => toggleFilter(filter.id)}
-              >
-                {filter.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         <div className="flex items-center space-x-2 ml-auto">
           <select
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            value={`${sortBy},${sortDir}`}
+            onChange={(e) => {
+              const [newSortBy, newSortDir] = e.target.value.split(",")
+              setSortBy(newSortBy)
+              setSortDir(newSortDir as "asc" | "desc")
+            }}
           >
-            <option value="Tên">Tên</option>
-            <option value="Email">Email</option>
-            <option value="Chức vụ">Chức vụ</option>
+            <option value="personId,asc">ID (Tăng dần)</option>
+            <option value="personId,desc">ID (Giảm dần)</option>
+            <option value="fullName,asc">Tên (A-Z)</option>
+            <option value="fullName,desc">Tên (Z-A)</option>
+            <option value="email,asc">Email (A-Z)</option>
+            <option value="email,desc">Email (Z-A)</option>
           </select>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Tìm kiếm"
+              placeholder="Tìm kiếm theo tên, email, chức vụ..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-64"
@@ -406,6 +326,9 @@ GUEST002,example2@email.com,Tran Thi B,0987654321,Staff,2,/avatar2.png,TRUE,FALS
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  STT
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tên khách mời
                 </th>
@@ -428,380 +351,257 @@ GUEST002,example2@email.com,Tran Thi B,0987654321,Staff,2,/avatar2.png,TRUE,FALS
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredKhachMoi.map((khach, index) => (
-                <tr key={khach.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="mr-4 text-sm text-gray-500">{index + 1}</span>
-                      <div>
-                        <div
-                          className="text-sm font-medium text-gray-900 cursor-pointer hover:text-orange-600"
-                          onClick={() => handleViewDetails(khach.id)}
-                        >
-                          {khach.ten}
-                        </div>
-                        <div className="text-sm text-gray-500">{khach.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{khach.soDienThoai}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{khach.chucVu}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{khach.gioiTinh}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge
-                      variant={khach.trangThai === "Đã đăng ký" ? "default" : "secondary"}
-                      className={
-                        khach.trangThai === "Đã đăng ký" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                      }
-                    >
-                      {khach.trangThai}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {khach.isVIP && <Star className="w-5 h-5 text-yellow-400 fill-current" />}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Xác nhận xóa khách mời</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Bạn có chắc chắn muốn xóa khách mời "{khach.ten}"? Hành động này không thể hoàn tác.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Hủy</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteGuest(khach)}
-                              className="bg-red-600 hover:bg-red-700"
+              {isLoading ? (
+                Array.from({ length: pagination.size }).map((_, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4"><Skeleton className="h-8 w-12" /></td>
+                    <td className="px-6 py-4" colSpan={7}>
+                      <Skeleton className="h-8 w-full" />
+                    </td>
+                  </tr>
+                ))
+              ) : filteredPersons.length > 0 ? (
+                filteredPersons.map((person, idx) => (
+                  <tr key={person.personId} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {pagination.page * pagination.size + idx + 1}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div>
+                          <div
+                            className="text-sm font-medium text-gray-900 cursor-pointer hover:text-orange-600"
+                              onClick={() => handleViewDetails(person.email)}
                             >
-                              Xóa
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditGuest(khach)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </div>
+                              {person.fullName}
+                            </div>
+                            <div className="text-sm text-gray-500">{person.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{person.phone}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{person.position}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {translateGender(person.gender)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Badge
+                          variant={person.status ? "default" : "secondary"}
+                          className={person.status ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                        >
+                          {person.status ? "Hoạt động" : "Không hoạt động"}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {person.isVip === "SUPER_VIP" ? (
+                        <Badge className="bg-purple-100 text-purple-800">Siêu VIP</Badge>
+                      ) : person.isVip === "VIP" ? (
+                        <Badge className="bg-yellow-100 text-yellow-800">VIP</Badge>
+                      ) : (
+                        <Badge className="bg-gray-100 text-gray-800">Thường</Badge>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Xác nhận xóa khách mời</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  Bạn có chắc chắn muốn xóa khách mời "{person.fullName}"? Hành động này không thể hoàn
+                                  tác.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Hủy</AlertDialogCancel>
+                              <AlertDialogAction
+                                  onClick={() => handleDeleteGuest(person)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Xóa
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                          <Button variant="ghost" size="sm" onClick={() => handleEditGuest(person.email)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="text-center py-10 text-gray-500">
+                    Không tìm thấy khách mời nào.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.first}>
             ← Previous
           </Button>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" className="bg-orange-500 text-white">
-              1
-            </Button>
-            <Button variant="outline" size="sm">
-              2
-            </Button>
-            <Button variant="outline" size="sm">
-              3
-            </Button>
-            <span className="text-sm text-gray-500">...</span>
-            <Button variant="outline" size="sm">
-              8
-            </Button>
-            <Button variant="outline" size="sm">
-              9
-            </Button>
-            <Button variant="outline" size="sm">
-              10
-            </Button>
+          <div className="text-sm text-gray-700">
+            Trang {pagination.page + 1} / {pagination.totalPages}
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.last}>
             Next →
           </Button>
         </div>
       </div>
 
       {/* Modal form thêm khách mời */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Thêm khách mời mới</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4 py-4">
+            {/* Email */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Person ID</label>
-              <Input
-                value={formData.personId}
-                onChange={(e) => handleInputChange("personId", e.target.value)}
-                placeholder="Nhập Person ID"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-sm font-medium">Email*</label>
               <Input
                 type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
+                value={newPersonData.email}
+                onChange={(e) => setNewPersonData({ ...newPersonData, email: e.target.value })}
                 placeholder="Nhập email"
               />
             </div>
 
+            {/* Full Name */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Họ và tên</label>
+              <label className="text-sm font-medium">Họ và tên*</label>
               <Input
-                value={formData.fullName}
-                onChange={(e) => handleInputChange("fullName", e.target.value)}
+                value={newPersonData.fullName}
+                onChange={(e) => setNewPersonData({ ...newPersonData, fullName: e.target.value })}
                 placeholder="Nhập họ và tên"
               />
             </div>
 
+            {/* Phone */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Số điện thoại</label>
               <Input
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
+                value={newPersonData.phone}
+                onChange={(e) => setNewPersonData({ ...newPersonData, phone: e.target.value })}
                 placeholder="Nhập số điện thoại"
               />
             </div>
 
+            {/* Position */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Chức vụ</label>
               <Input
-                value={formData.position}
-                onChange={(e) => handleInputChange("position", e.target.value)}
+                value={newPersonData.position}
+                onChange={(e) => setNewPersonData({ ...newPersonData, position: e.target.value })}
                 placeholder="Nhập chức vụ"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Seat ID</label>
-              <Input
-                type="number"
-                value={formData.seatId}
-                onChange={(e) => handleInputChange("seatId", Number.parseInt(e.target.value) || 0)}
-                placeholder="Nhập Seat ID"
-              />
-            </div>
-
+            {/* Gender */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Giới tính</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={formData.gender}
-                onChange={(e) => handleInputChange("gender", e.target.value)}
+              <Select
+                value={newPersonData.gender}
+                onValueChange={(value: "MALE" | "FEMALE" | "OTHER") =>
+                  setNewPersonData({ ...newPersonData, gender: value })
+                }
               >
-                <option value="MALE">Nam</option>
-                <option value="FEMALE">Nữ</option>
-                <option value="OTHER">Khác</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn giới tính" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MALE">Nam</SelectItem>
+                  <SelectItem value="FEMALE">Nữ</SelectItem>
+                  <SelectItem value="OTHER">Khác</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
+            {/* Status */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Trạng thái</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={formData.status}
-                onChange={(e) => handleInputChange("status", e.target.value)}
+              <Select
+                value={newPersonData.status}
+                onValueChange={(value: "TRUE" | "FALSE") => setNewPersonData({ ...newPersonData, status: value })}
               >
-                <option value="TRUE">Hoạt động</option>
-                <option value="FALSE">Không hoạt động</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TRUE">Hoạt động</SelectItem>
+                  <SelectItem value="FALSE">Không hoạt động</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
+            {/* VIP */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">VIP</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={formData.isVip}
-                onChange={(e) => handleInputChange("isVip", e.target.value)}
+              <label className="text-sm font-medium">Loại khách</label>
+              <Select
+                value={newPersonData.isVip}
+                onValueChange={(value: "SUPER_VIP" | "VIP" | "NORMAL") => setNewPersonData({ ...newPersonData, isVip: value })}
               >
-                <option value="TRUE">VIP</option>
-                <option value="FALSE">Thường</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn loại khách" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SUPER_VIP">Siêu VIP</SelectItem>
+                  <SelectItem value="VIP">VIP</SelectItem>
+                  <SelectItem value="NORMAL">Thường</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Avatar</label>
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-gray-400 transition-colors"
-                onClick={handleClickUpload}
-              >
-                {avatarPreview ? (
-                  <div className="flex flex-col items-center">
+            {/* Avatar Upload */}
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium">Ảnh đại diện</label>
+              <div className="flex items-center space-x-4">
+                {newPersonData.avatarUrl && (
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300">
                     <img
-                      src={avatarPreview || "/placeholder.svg"}
+                      src={newPersonData.avatarUrl}
                       alt="Avatar preview"
-                      className="w-20 h-20 rounded-full object-cover mb-2"
+                      className="w-full h-full object-cover"
                     />
-                    <p className="text-sm text-gray-600">Click để thay đổi ảnh</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">Click để chọn ảnh avatar</p>
-                    <p className="text-xs text-gray-400">PNG, JPG, GIF up to 10MB</p>
                   </div>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  {avatarFile ? "Thay đổi ảnh" : "Chọn ảnh"}
+                </Button>
+                {avatarFile && (
+                  <span className="text-sm text-gray-500">{avatarFile.name}</span>
+                )}
               </div>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddModal(false)}>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)} disabled={isSubmitting}>
               Hủy
             </Button>
-            <Button onClick={handleSubmitForm} className="bg-orange-500 hover:bg-orange-600">
-              Thêm khách mời
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal form sửa khách mời */}
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Sửa thông tin khách mời</DialogTitle>
-          </DialogHeader>
-
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Person ID</label>
-              <Input
-                value={formData.personId}
-                onChange={(e) => handleInputChange("personId", e.target.value)}
-                placeholder="Nhập Person ID"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="Nhập email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Họ và tên</label>
-              <Input
-                value={formData.fullName}
-                onChange={(e) => handleInputChange("fullName", e.target.value)}
-                placeholder="Nhập họ và tên"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Số điện thoại</label>
-              <Input
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="Nhập số điện thoại"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Chức vụ</label>
-              <Input
-                value={formData.position}
-                onChange={(e) => handleInputChange("position", e.target.value)}
-                placeholder="Nhập chức vụ"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Seat ID</label>
-              <Input
-                type="number"
-                value={formData.seatId}
-                onChange={(e) => handleInputChange("seatId", Number.parseInt(e.target.value) || 0)}
-                placeholder="Nhập Seat ID"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Giới tính</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={formData.gender}
-                onChange={(e) => handleInputChange("gender", e.target.value)}
-              >
-                <option value="MALE">Nam</option>
-                <option value="FEMALE">Nữ</option>
-                <option value="OTHER">Khác</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Trạng thái</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={formData.status}
-                onChange={(e) => handleInputChange("status", e.target.value)}
-              >
-                <option value="TRUE">Hoạt động</option>
-                <option value="FALSE">Không hoạt động</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">VIP</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={formData.isVip}
-                onChange={(e) => handleInputChange("isVip", e.target.value)}
-              >
-                <option value="TRUE">VIP</option>
-                <option value="FALSE">Thường</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Avatar</label>
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-gray-400 transition-colors"
-                onClick={handleClickUpload}
-              >
-                {avatarPreview ? (
-                  <div className="flex flex-col items-center">
-                    <img
-                      src={avatarPreview || "/placeholder.svg"}
-                      alt="Avatar preview"
-                      className="w-20 h-20 rounded-full object-cover mb-2"
-                    />
-                    <p className="text-sm text-gray-600">Click để thay đổi ảnh</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">Click để chọn ảnh avatar</p>
-                    <p className="text-xs text-gray-400">PNG, JPG, GIF up to 10MB</p>
-                  </div>
-                )}
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
-              Hủy
-            </Button>
-            <Button onClick={handleEditSubmit} className="bg-orange-500 hover:bg-orange-600">
-              Cập nhật
+            <Button 
+              onClick={handleAddSubmit} 
+              className="bg-orange-500 hover:bg-orange-600"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Đang xử lý..." : "Thêm khách mời"}
             </Button>
           </DialogFooter>
         </DialogContent>
