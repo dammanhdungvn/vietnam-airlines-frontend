@@ -9,6 +9,7 @@ import userEvent from "@testing-library/user-event"
 import LoginPage from "@/app/login/page"
 import { useAuth } from "@/context/AuthContext"
 import * as authService from "@/services/auth.service"
+import { toast } from "sonner"
 
 // Mock dependencies
 jest.mock("next/navigation", () => ({
@@ -18,15 +19,15 @@ jest.mock("next/navigation", () => ({
 }))
 jest.mock("@/context/AuthContext")
 jest.mock("@/services/auth.service")
-jest.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({
-    toast: jest.fn(),
-  }),
+jest.mock("sonner", () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+  },
 }))
 
 describe("Trang Đăng Nhập - Component Test", () => {
   let mockAuthLogin: jest.Mock
-  let mockToast: jest.Mock
   const mockRouterPush = jest.fn()
 
   // Setup trước mỗi bài test
@@ -42,10 +43,6 @@ describe("Trang Đăng Nhập - Component Test", () => {
 
     // Cung cấp giá trị mock cho useRouter
     jest.spyOn(require("next/navigation"), "useRouter").mockReturnValue({ push: mockRouterPush })
-    
-    // Cung cấp giá trị mock cho useToast
-    mockToast = jest.fn()
-    jest.spyOn(require("@/hooks/use-toast"), "useToast").mockReturnValue({ toast: mockToast })
   })
 
   // Sắp xếp (Arrange)
@@ -120,7 +117,7 @@ describe("Trang Đăng Nhập - Component Test", () => {
     await waitFor(() => {
       expect(authService.login).toHaveBeenCalledWith({ username: "admin", password: "password" })
       expect(mockAuthLogin).toHaveBeenCalledWith(mockLoginResponse.data)
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Thành công" }))
+      expect(toast.success).toHaveBeenCalledWith("Đăng nhập thành công!")
       expect(mockRouterPush).toHaveBeenCalledWith("/dashboard")
     })
   })
@@ -141,11 +138,7 @@ describe("Trang Đăng Nhập - Component Test", () => {
 
     // Assert
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-        title: "Lỗi",
-        description: mockErrorResponse.message,
-        variant: "destructive",
-      }))
+      expect(toast.error).toHaveBeenCalledWith(mockErrorResponse.message)
     })
   })
 })

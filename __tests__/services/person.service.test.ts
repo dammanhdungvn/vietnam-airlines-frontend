@@ -38,7 +38,7 @@ describe("Person Service", () => {
     position: "Nhan vien",
     avatarUrl: "base64string",
     status: true,
-    isVip: false,
+    isVip: "VIP",
     gender: "MALE",
     createdAt: "2025-09-24 14:37:12",
     updatedAt: "2025-09-27 03:13:17",

@@ -5,7 +5,7 @@
 
 import { getItems, createItem, updateItem, deleteItem } from "@/services/item.service"
 import api from "@/lib/api"
-import { IItemData, IItemResponse, IItemPayload, IItem } from "@/types/item.type"
+import { IItemData, IItemResponse, IItemPayload, IItem, IGetItemsParams } from "@/types/item.type"
 
 // Mock the api module
 jest.mock("@/lib/api")
@@ -27,6 +27,7 @@ describe("Item Service", () => {
             itemName: "Tàu hũ lạnh",
             price: 50000,
             description: null,
+            imageUrl: null,
             createdAt: "2025-09-24 14:36:08",
             updatedAt: "2025-09-24 14:36:08",
           },
@@ -86,7 +87,7 @@ describe("Item Service", () => {
         },
       }
       mockedApi.get.mockResolvedValue(mockResponse)
-      const params = {
+      const params: IGetItemsParams = {
         page: 1,
         size: 5,
         sortBy: "price",
@@ -113,6 +114,7 @@ describe("Item Service", () => {
       const mockCreatedItem: IItem = {
         id: 100,
         ...newItemPayload,
+        imageUrl: null,
         createdAt: "2025-09-28 10:00:00",
         updatedAt: "2025-09-28 10:00:00",
       }
@@ -125,8 +127,8 @@ describe("Item Service", () => {
       expect(mockedApi.post).toHaveBeenCalled()
       const [url, body, config] = mockedApi.post.mock.calls[0]
       expect(url).toBe("/items")
-      expect(body).toBeInstanceOf(FormData)
-      expect(config).toEqual({ headers: { "Content-Type": "multipart/form-data" } })
+      expect(body).toEqual(newItemPayload)
+      expect(config).toEqual({ headers: { "Content-Type": "application/json" } })
       expect(result).toEqual(mockCreatedItem)
     })
 
@@ -158,6 +160,7 @@ describe("Item Service", () => {
       const mockUpdatedItem: IItem = {
         ...updatePayload,
         id: 1,
+        imageUrl: null,
         createdAt: "2025-09-24 14:36:08",
         updatedAt: "2025-09-28 11:00:00",
       }
@@ -170,8 +173,8 @@ describe("Item Service", () => {
       expect(mockedApi.post).toHaveBeenCalled()
       const [url, body, config] = mockedApi.post.mock.calls[0]
       expect(url).toBe("/items")
-      expect(body).toBeInstanceOf(FormData)
-      expect(config).toEqual({ headers: { "Content-Type": "multipart/form-data" } })
+      expect(body).toEqual(updatePayload)
+      expect(config).toEqual({ headers: { "Content-Type": "application/json" } })
       expect(result).toEqual(mockUpdatedItem)
     })
 

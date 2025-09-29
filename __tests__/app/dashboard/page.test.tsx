@@ -7,22 +7,22 @@ import "@testing-library/jest-dom"
 import { render, screen, waitFor, act } from "@testing-library/react"
 import DashboardPage from "@/app/dashboard/page"
 import * as statisticsService from "@/services/statistics.service"
+import { toast } from "sonner"
 
 // Mock dependencies
 jest.mock("@/services/statistics.service")
-jest.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({
-    toast: jest.fn(),
-  }),
+jest.mock("sonner", () => ({
+  toast: {
+    error: jest.fn(),
+  },
 }))
 
-// Mock StatsChart component để tránh lỗi recharts trong test
+// Mock StatsChart component to avoid recharts errors in tests
 jest.mock("@/components/stats-chart", () => ({
   StatsChart: () => <div data-testid="stats-chart">Mocked Chart</div>,
 }))
 
 describe("Trang Dashboard - Component Test", () => {
-  
   afterEach(() => {
     jest.clearAllMocks()
   })
@@ -81,8 +81,6 @@ describe("Trang Dashboard - Component Test", () => {
       data: null
     }
     ;(statisticsService.getStatistics as jest.Mock).mockResolvedValue(mockErrorResponse)
-    const mockToast = jest.fn()
-    jest.spyOn(require("@/hooks/use-toast"), "useToast").mockReturnValue({ toast: mockToast })
 
     // Act
     await act(async () => {
@@ -91,19 +89,13 @@ describe("Trang Dashboard - Component Test", () => {
 
     // Assert: Kiểm tra thông báo lỗi được gọi
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-        title: "Lỗi",
-        description: "Unauthorized",
-        variant: "destructive",
-      }))
+      expect(toast.error).toHaveBeenCalledWith("Unauthorized")
     })
   })
 
   it("phải hiển thị thông báo lỗi khi có lỗi mạng", async () => {
     // Arrange
     ;(statisticsService.getStatistics as jest.Mock).mockRejectedValue(new Error("Network Error"))
-    const mockToast = jest.fn()
-    jest.spyOn(require("@/hooks/use-toast"), "useToast").mockReturnValue({ toast: mockToast })
 
     // Act
     await act(async () => {
@@ -112,11 +104,7 @@ describe("Trang Dashboard - Component Test", () => {
 
     // Assert: Kiểm tra thông báo lỗi mạng được gọi
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-        title: "Lỗi",
-        description: "Đã có lỗi xảy ra khi tải dữ liệu thống kê",
-        variant: "destructive",
-      }))
+      expect(toast.error).toHaveBeenCalledWith("Đã có lỗi xảy ra khi tải dữ liệu thống kê")
     })
   })
 
