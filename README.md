@@ -148,7 +148,7 @@ Neutral Gray: #6b7280      /* Text phụ, borders */
 
 \`\`\`bash
 # 1. Clone repository
-git clone https://github.com/vietnam-airlines/event-management.git
+git clone https://github.com/dammanhdungvn/vietnam-airlines-frontend.git
 cd vietnam-airlines-event-management
 
 # 2. Cài đặt dependencies
