@@ -90,6 +90,10 @@ export default function DangKyHoPage() {
   const [searchTermFull, setSearchTermFull] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<{ title: string; message: string } | null>(null)
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   // Remove hardcoded combos
   
@@ -359,6 +363,10 @@ export default function DangKyHoPage() {
         const response = await registerOrUpdatePerson(safePayload as any);
         if (response.code === 200) {
           setShowSuccessModal(true);
+          // Refresh trang sau 2 giây
+          setTimeout(() => {
+            window.location.reload()
+          }, 2000)
         } else {
            let errorMessage = response.message || "Dữ liệu không hợp lệ.";
            if (response.data && typeof response.data === 'object') {

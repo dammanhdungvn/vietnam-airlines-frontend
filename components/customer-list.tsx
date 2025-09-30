@@ -130,15 +130,35 @@ export function CustomerList({ data, isLoading, selectedCustomer, onSelect, onPa
 
       {/* Phân trang */}
       {data && data.totalPages > 1 && (
-        <div className="flex justify-center mt-8 space-x-2">
-          <Button onClick={() => onPageChange(data.page - 1)} disabled={data.first}>
-            Trang trước
+        <div className="flex justify-center items-center mt-8 space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onPageChange(data.page - 1)} 
+            disabled={data.first}
+          >
+            ← Previous
           </Button>
-          <span className="flex items-center px-4">
-            Trang {data.page + 1} / {data.totalPages}
-          </span>
-          <Button onClick={() => onPageChange(data.page + 1)} disabled={data.last}>
-            Trang sau
+          <div className="flex items-center space-x-2">
+            {Array.from({ length: data.totalPages }, (_, i) => i).map((page) => (
+              <Button
+                key={page}
+                variant="outline"
+                size="sm"
+                className={data.page === page ? "bg-orange-500 text-white" : ""}
+                onClick={() => onPageChange(page)}
+              >
+                {page + 1}
+              </Button>
+            ))}
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onPageChange(data.page + 1)} 
+            disabled={data.last}
+          >
+            Next →
           </Button>
         </div>
       )}
