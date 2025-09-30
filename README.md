@@ -181,9 +181,7 @@ npm run export
 
 \`\`\`env
 # .env.local
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=https://api.vietnamairlines.com
-NEXT_PUBLIC_UPLOAD_MAX_SIZE=5242880  # 5MB
+NEXT_PUBLIC_API_URL=http://171.244.130.53:9082/api/v1
 \`\`\`
 
 ## 📖 Hướng dẫn sử dụng
@@ -474,3 +472,39 @@ The project includes comprehensive unit tests for:
 All tests follow industry best practices with proper mocking and isolation.
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+
+Sau khi build thành công, để chạy build đó bạn dùng lệnh:
+
+## **Chạy build production:**
+```bash
+npm start
+```
+
+## **Chạy build UAT:**
+```bash
+npm run start:uat
+```
+
+## **Quy trình đầy đủ:**
+
+1. **Build:**
+   ```bash
+   npm run build        # Build production
+   # hoặc
+   npm run build:uat    # Build UAT
+   ```
+
+2. **Chạy build đã build:**
+   ```bash
+   npm start            # Chạy production build
+   # hoặc  
+   npm run start:uat    # Chạy UAT build
+   ```
+
+## **Lưu ý:**
+- `npm start` chạy build production (port mặc định 3000)
+- `npm run start:uat` chạy build UAT với file `.env.uat`
+- Build sẽ chạy trên port 3000 (có thể thay đổi bằng biến môi trường `PORT`)
+
+Sau khi chạy `npm start`, bạn có thể truy cập ứng dụng tại `http://localhost:3000`
