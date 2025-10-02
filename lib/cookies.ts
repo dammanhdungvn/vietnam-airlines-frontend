@@ -35,12 +35,37 @@ function encrypt(text: string): string {
 }
 
 /**
+ * Kiểm tra chuỗi có phải Base64 hợp lệ không
+ * @param str - Chuỗi cần kiểm tra
+ * @returns true nếu là Base64 hợp lệ
+ */
+function isValidBase64(str: string): boolean {
+  try {
+    // Check if string matches Base64 pattern
+    const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Pattern.test(str)) return false;
+    
+    // Try to decode to verify it's valid
+    atob(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Giải mã chuỗi đã được mã hóa
  * @param encryptedText - Chuỗi đã mã hóa (base64)
  * @returns Chuỗi gốc sau khi giải mã
  */
 function decrypt(encryptedText: string): string {
   try {
+    // Validate if it's a valid base64 string
+    if (!isValidBase64(encryptedText)) {
+      console.warn('Invalid Base64 string in cookie, returning as-is');
+      return encryptedText;
+    }
+    
     const encryptedBytes = Uint8Array.from(atob(encryptedText), c => c.charCodeAt(0));
     const keyBytes = new TextEncoder().encode(ENCRYPTION_KEY);
     const decrypted = new Uint8Array(encryptedBytes.length);
@@ -52,11 +77,8 @@ function decrypt(encryptedText: string): string {
     return new TextDecoder().decode(decrypted);
   } catch (error) {
     console.error('Decryption error:', error);
-    try {
-      return atob(encryptedText); // Fallback to simple base64 decode
-    } catch {
-      return encryptedText;
-    }
+    // Return empty string to trigger re-authentication
+    return '';
   }
 }
 
@@ -93,7 +115,16 @@ export function getCookie(name: string): string | null {
     while (c.charAt(0) === ' ') c = c.substring(1, c.length);
     if (c.indexOf(nameEQ) === 0) {
       const encryptedValue = decodeURIComponent(c.substring(nameEQ.length, c.length));
-      return decrypt(encryptedValue);
+      const decryptedValue = decrypt(encryptedValue);
+      
+      // If decryption fails (returns empty string), delete the invalid cookie
+      if (decryptedValue === '' && encryptedValue !== '') {
+        console.warn(`Invalid cookie "${name}" detected, clearing it`);
+        deleteCookie(name);
+        return null;
+      }
+      
+      return decryptedValue;
     }
   }
   return null;
@@ -118,3 +149,11 @@ export function hasCookie(name: string): boolean {
   return getCookie(name) !== null;
 }
 
+/**
+ * Xóa tất cả auth cookies (dùng khi có lỗi hoặc logout)
+ */
+export function clearAuthCookies(): void {
+  deleteCookie('accessToken');
+  deleteCookie('refreshToken');
+  deleteCookie('user');
+}

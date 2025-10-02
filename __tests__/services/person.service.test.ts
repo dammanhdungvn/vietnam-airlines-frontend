@@ -186,6 +186,9 @@ describe("Person Service", () => {
   });
 
   describe("registerOrUpdatePerson", () => {
+    /**
+     * @test Đăng ký hoặc cập nhật person thành công với đầy đủ thông tin
+     */
     it("should register or update a person successfully", async () => {
       const payload: RegistrationPayload = {
         fullName: "New Person",
@@ -206,6 +209,42 @@ describe("Person Service", () => {
       expect(result).toEqual(mockResponse.data);
     });
 
+    /**
+     * @test Đăng ký hoặc cập nhật person với isVip và seatInfo
+     */
+    it("should register or update a person with isVip and seatInfo successfully", async () => {
+      const payload: RegistrationPayload = {
+        fullName: "VIP Person",
+        email: "vip@example.com",
+        phone: "0987654321",
+        position: "Manager",
+        gender: "FEMALE",
+        status: true,
+        isVip: "SUPER_VIP",
+        seatInfo: {
+          seatNumber: "A1",
+          paidPrice: 500000,
+        },
+        items: [
+          {
+            itemId: 1,
+            quantity: 2,
+            paidAmount: 100000,
+          }
+        ],
+      };
+      const mockResponse = { data: { ...payload, personId: "456" } };
+      mockedApi.post.mockResolvedValue(mockResponse);
+
+      const result = await registerOrUpdatePerson(payload);
+
+      expect(mockedApi.post).toHaveBeenCalledWith("/core/persons/registration", payload);
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    /**
+     * @test Xử lý lỗi khi đăng ký/cập nhật person thất bại
+     */
     it("should throw an error if registering/updating a person fails", async () => {
       const payload: RegistrationPayload = {
         fullName: "New Person",

@@ -64,14 +64,24 @@ Quản lý thông tin khách mời tham gia sự kiện với đầy đủ tính
 ### Chỉnh Sửa
 
 ```
-1. Click icon "Edit" hoặc tên khách
-2. Modal hiện thông tin hiện tại
-3. Chỉnh sửa:
-   - Thay đổi avatar (click icon pencil)
-   - Update thông tin
-4. Click "Lưu"
-5. System: Upload avatar → Update person
-6. Toast success → Reload
+1. Click icon "Edit"
+2. System gọi API lấy thông tin đầy đủ (email)
+3. Modal hiển thị:
+   - Thông tin cơ bản
+   - Ghế ngồi (nếu có)
+   - Món ăn đã đặt (nếu có)
+   - Avatar
+4. Chỉnh sửa:
+   - Thông tin cá nhân
+   - Thay đổi/chọn ghế mới
+   - Thêm/bớt món ăn
+   - Upload avatar mới
+5. Click "Cập nhật"
+6. System: 
+   - Kiểm tra thay đổi
+   - Upload avatar (nếu có)
+   - Update thông tin qua registration API
+7. Toast success → Reload
 ```
 
 ### Import CSV
@@ -170,10 +180,34 @@ Params: page, size, sortBy, sortDir
 Response: { content, totalElements, ... }
 ```
 
+### GET /core/persons/registration/{email}
+```
+Lấy thông tin đầy đủ của person bao gồm:
+- Thông tin cá nhân
+- Ghế ngồi (seatInfo)
+- Món ăn đã đặt (items)
+Response: {
+  personId, fullName, email, ...,
+  seatInfo: { seatNumber, paidPrice },
+  items: [{ id, itemName, quantity, ... }]
+}
+```
+
 ### POST /core/persons
 ```
 Body: { email, fullName, ... }
 Response: { personId, ... }
+```
+
+### POST /core/persons/registration
+```
+Cập nhật thông tin person (dùng email để identify)
+Body: {
+  email, fullName, position, phone,
+  gender, status, isVip,
+  seatInfo: { seatNumber, paidPrice } | null,
+  items: [{ itemId, quantity, paidAmount }]
+}
 ```
 
 ### POST /core/persons/valid-upload-face
@@ -186,6 +220,28 @@ Body: FormData (faceImage)
 ```
 Response: 200 OK
 ```
+
+---
+
+## 🎯 Tính Năng Nâng Cao
+
+### Quản Lý Ghế Ngồi (Edit Modal)
+- **Xem ghế hiện tại**: Hiển thị số ghế và giá
+- **Thay đổi ghế**: Chọn từ danh sách ghế available
+- **Xóa ghế**: Hủy đăng ký ghế ngồi
+- **Tự động cập nhật giá**: Theo thông tin ghế được chọn
+
+### Quản Lý Món Ăn (Edit Modal)
+- **Danh sách món đã chọn**: Hiển thị với số lượng và giá
+- **Thêm món**: Chọn từ dropdown menu
+- **Tăng/giảm số lượng**: Buttons +/-
+- **Xóa món**: Giảm về 0 hoặc click remove
+- **Tổng tiền**: Tự động tính toán real-time
+
+### Change Detection
+- **Thông minh**: Chỉ gọi API khi có thay đổi
+- **So sánh**: Với dữ liệu gốc từ API
+- **Tối ưu**: Tiết kiệm bandwidth và server load
 
 ---
 

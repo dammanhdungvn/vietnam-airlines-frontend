@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { setCookie, getCookie, deleteCookie } from "@/lib/cookies"
+import { setCookie, getCookie, deleteCookie, clearAuthCookies } from "@/lib/cookies"
 
 /**
  * @fileoverview AuthContext cung cấp một cơ chế quản lý trạng thái xác thực người dùng trên toàn bộ ứng dụng.
@@ -60,9 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Failed to parse user from cookies", error)
-      deleteCookie("accessToken")
-      deleteCookie("refreshToken")
-      deleteCookie("user")
+      clearAuthCookies()
       setUser(null)
     } finally {
       setIsLoading(false)
@@ -87,9 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
    * Xóa toàn bộ dữ liệu liên quan khỏi cookies, reset state và điều hướng về trang đăng nhập.
    */
   const logout = () => {
-    deleteCookie("accessToken")
-    deleteCookie("refreshToken")
-    deleteCookie("user")
+    clearAuthCookies()
     setUser(null)
     router.push("/login")
   }

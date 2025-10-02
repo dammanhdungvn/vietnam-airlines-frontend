@@ -26,11 +26,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
-import { getPersonsPaginated, deletePerson, importPersons, addPerson, validateAndUploadFace, registerOrUpdatePerson } from "@/services/person.service"
-import { Person, PaginatedApiResponse, AddPersonPayload } from "@/types/person.type"
+import { getPersonsPaginated, deletePerson, importPersons, addPerson, validateAndUploadFace, registerOrUpdatePerson, getPersonByEmail } from "@/services/person.service"
+import { Person, PaginatedApiResponse, AddPersonPayload, RegistrationPayload } from "@/types/person.type"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getItems } from "@/services/item.service"
+import { IItem } from "@/types/item.type"
+import { getSeatsInfo } from "@/services/seat.service"
+import { ISeat } from "@/types/seat.type"
+import { Minus, Utensils, MapPin } from "lucide-react"
 
 /**
  * Trang Quản lý khách mời
@@ -72,6 +77,13 @@ export default function QuanLyKhachMoiPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
+  // States for available items and seats
+  const [availableItems, setAvailableItems] = useState<IItem[]>([])
+  const [availableSeats, setAvailableSeats] = useState<ISeat[]>([])
+  
+  // State for original person data (for change detection)
+  const [originalPersonData, setOriginalPersonData] = useState<Person | null>(null)
+
   const fetchPersonsFull = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -93,6 +105,27 @@ export default function QuanLyKhachMoiPage() {
   useEffect(() => {
     fetchPersonsFull()
   }, [fetchPersonsFull])
+
+  /**
+   * Effect để load danh sách món ăn và ghế available
+   */
+  useEffect(() => {
+    const loadAvailableData = async () => {
+      try {
+        // Load available items
+        const itemsData = await getItems({ page: 0, size: 1000, sortBy: "itemName", sortDir: "asc" })
+        setAvailableItems(itemsData.content)
+
+        // Load all seats (not filtering by status to get complete list)
+        // We'll filter in the UI based on isBooked and occupied by others
+        const seatsData = await getSeatsInfo({ page: 0, size: 1000, sortBy: "seatNumber", sortDir: "asc" })
+        setAvailableSeats(seatsData.content)
+      } catch (error) {
+        console.error("Error loading available data:", error)
+      }
+    }
+    loadAvailableData()
+  }, [])
 
   const translateGender = (gender: "MALE" | "FEMALE" | "OTHER" | string) => {
     switch (gender) {
@@ -120,22 +153,43 @@ export default function QuanLyKhachMoiPage() {
   
   const editAvatarInputRef = useRef<HTMLInputElement>(null)
 
-  const handleViewDetails = (person: Person) => {
-    setEditingPerson(person)
-    setEditFormData({
-      email: person.email,
-      fullName: person.fullName,
-      phone: person.phone,
-      position: person.position,
-      gender: person.gender,
-      status: person.status,
-      isVip: person.isVip,
-    })
-    setIsEditModalOpen(true)
+  /**
+   * Hàm xử lý khi click edit guest - fetch full person details bằng API
+   */
+  const handleEditGuest = async (person: Person) => {
+    try {
+      setIsUpdating(true)
+      // Gọi API để lấy thông tin đầy đủ của person bằng email
+      const fullPersonData = await getPersonByEmail(person.email)
+      
+      // Set original data for change detection
+      setOriginalPersonData(fullPersonData)
+      
+      // Set editing person and form data
+      setEditingPerson(fullPersonData)
+      setEditFormData({
+        fullName: fullPersonData.fullName,
+        email: fullPersonData.email,
+        phone: fullPersonData.phone,
+        position: fullPersonData.position,
+        gender: fullPersonData.gender,
+        status: fullPersonData.status,
+        isVip: fullPersonData.isVip,
+        seatInfo: fullPersonData.seatInfo,
+        items: fullPersonData.items,
+      })
+      setEditAvatarFile(null)
+      setIsEditModalOpen(true)
+    } catch (error) {
+      toast.error("Không thể tải thông tin khách hàng")
+      console.error("Error fetching person details:", error)
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
-  const handleEditGuest = (person: Person) => {
-    handleViewDetails(person)
+  const handleViewDetails = (person: Person) => {
+    handleEditGuest(person)
   }
 
   const handleDeleteGuest = (person: Person) => {
@@ -163,8 +217,57 @@ export default function QuanLyKhachMoiPage() {
     }
   }
 
+  /**
+   * Hàm check xem có thay đổi dữ liệu không
+   */
+  const hasDataChanged = (): boolean => {
+    if (!originalPersonData || !editingPerson) return false
+    
+    // Check basic fields
+    if (editFormData.fullName !== originalPersonData.fullName) return true
+    if (editFormData.phone !== originalPersonData.phone) return true
+    if (editFormData.position !== originalPersonData.position) return true
+    if (editFormData.gender !== originalPersonData.gender) return true
+    if (editFormData.status !== originalPersonData.status) return true
+    if (editFormData.isVip !== originalPersonData.isVip) return true
+    
+    // Check avatar
+    if (editAvatarFile) return true
+    
+    // Check seat info
+    const originalSeat = originalPersonData.seatInfo
+    const currentSeat = editFormData.seatInfo
+    if ((!originalSeat && currentSeat) || (originalSeat && !currentSeat)) return true
+    if (originalSeat && currentSeat) {
+      if (originalSeat.seatNumber !== currentSeat.seatNumber) return true
+      if (originalSeat.paidPrice !== currentSeat.paidPrice) return true
+    }
+    
+    // Check items
+    const originalItems = originalPersonData.items || []
+    const currentItems = editFormData.items || []
+    if (originalItems.length !== currentItems.length) return true
+    
+    for (let i = 0; i < originalItems.length; i++) {
+      const orig = originalItems[i]
+      const curr = currentItems[i]
+      if (orig.id !== curr.id || orig.quantity !== curr.quantity || orig.totalAmount !== curr.totalAmount) {
+        return true
+      }
+    }
+    
+    return false
+  }
+
   const handleUpdateSubmit = async () => {
-    if (!editingPerson) return
+    if (!editingPerson || !originalPersonData) return
+    
+    // Check if data has changed
+    if (!hasDataChanged()) {
+      toast.info("Không có thay đổi nào để cập nhật")
+      setIsEditModalOpen(false)
+      return
+    }
     
     setIsUpdating(true)
     try {
@@ -172,37 +275,79 @@ export default function QuanLyKhachMoiPage() {
       if (editAvatarFile) {
         try {
           await validateAndUploadFace(editingPerson.personId, editAvatarFile)
+          toast.success("Đã cập nhật ảnh đại diện")
         } catch (avatarError) {
           toast.warning("Upload avatar thất bại, nhưng sẽ tiếp tục cập nhật thông tin.")
         }
       }
 
-      // Update person info
+      // Build payload for update - ensure all fields are correct type
+      const status = editFormData.status !== undefined ? editFormData.status : editingPerson.status
+      
       const payload: any = {
         email: editFormData.email || editingPerson.email,
         fullName: editFormData.fullName || editingPerson.fullName,
         phone: editFormData.phone || editingPerson.phone,
         position: editFormData.position || editingPerson.position,
-        gender: (editFormData.gender || editingPerson.gender) as any,
-        status: editFormData.status !== undefined ? editFormData.status : editingPerson.status,
-        isVip: editFormData.isVip || editingPerson.isVip,
+        gender: (editFormData.gender || editingPerson.gender) as "MALE" | "FEMALE" | "OTHER",
+        status: Boolean(status), // Ensure boolean
+      }
+      
+      // Include isVip if available
+      const vipLevel = editFormData.isVip || editingPerson.isVip
+      if (vipLevel) {
+        payload.isVip = vipLevel
       }
 
-      // Include seat info if exists
-      if (editingPerson.seatInfo) {
-        payload.seatInfo = {
-          seatNumber: editingPerson.seatInfo.seatNumber,
-          paidPrice: editingPerson.seatInfo.paidPrice || 0,
+      // Only include seatInfo if it was changed from original
+      const originalSeat = originalPersonData?.seatInfo
+      const currentSeat = editFormData.seatInfo
+      
+      // Check if seat was changed
+      const hadSeat = originalSeat && originalSeat.seatNumber
+      const hasSeat = currentSeat && currentSeat.seatNumber
+      const seatChanged = hadSeat !== hasSeat || 
+                          originalSeat?.seatNumber !== currentSeat?.seatNumber || 
+                          originalSeat?.paidPrice !== currentSeat?.paidPrice
+      
+      if (seatChanged) {
+        if (hasSeat) {
+          // Seat was changed or added
+          payload.seatInfo = {
+            seatNumber: currentSeat.seatNumber,
+            paidPrice: Number(currentSeat.paidPrice) || 0,
+          }
+        } else if (hadSeat && !hasSeat) {
+          // Seat was removed - send null to indicate removal
+          payload.seatInfo = null
         }
       }
 
-      // Include items if exists
-      if (editingPerson.items && editingPerson.items.length > 0) {
-        payload.items = editingPerson.items.map((item: any) => ({
-          itemId: item.id,
-          quantity: item.quantity,
-          paidAmount: item.totalAmount,
-        }))
+      // Only include items if they were changed from original
+      const originalItems = originalPersonData?.items || []
+      const currentItems = editFormData.items || []
+      
+      // Check if items changed
+      const itemsChanged = originalItems.length !== currentItems.length ||
+                          originalItems.some((orig, idx) => {
+                            const curr = currentItems[idx]
+                            return !curr || orig.id !== curr.id || 
+                                   orig.quantity !== curr.quantity || 
+                                   orig.totalAmount !== curr.totalAmount
+                          })
+      
+      if (itemsChanged) {
+        if (currentItems.length > 0) {
+          // Items were changed or added
+          payload.items = currentItems.map((item: any) => ({
+            itemId: Number(item.id),
+            quantity: Number(item.quantity),
+            paidAmount: Number(item.totalAmount),
+          }))
+        } else if (originalItems.length > 0 && currentItems.length === 0) {
+          // All items were removed - send empty array to indicate removal
+          payload.items = []
+        }
       }
 
       await registerOrUpdatePerson(payload)
@@ -211,12 +356,120 @@ export default function QuanLyKhachMoiPage() {
       setEditingPerson(null)
       setEditFormData({})
       setEditAvatarFile(null)
+      setOriginalPersonData(null)
       fetchPersonsFull()
-    } catch (error) {
-      toast.error("Không thể cập nhật thông tin khách mời.")
+    } catch (error: any) {
+      console.error('Update error:', error)
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể cập nhật thông tin khách mời."
+      toast.error(`Lỗi: ${errorMessage}`)
     } finally {
       setIsUpdating(false)
     }
+  }
+
+  /**
+   * Hàm xử lý thay đổi ghế ngồi
+   */
+  const handleSeatChange = (seatNumber: string) => {
+    const seat = availableSeats.find(s => s.seatNumber === seatNumber)
+    if (seat) {
+      setEditFormData({
+        ...editFormData,
+        seatInfo: {
+          seatNumber: seat.seatNumber,
+          paidPrice: seat.paidPrice || 0,
+        },
+      })
+    }
+  }
+
+  /**
+   * Hàm xóa ghế ngồi
+   */
+  const handleRemoveSeat = () => {
+    setEditFormData({
+      ...editFormData,
+      seatInfo: null,
+    })
+  }
+
+  /**
+   * Hàm thêm món ăn
+   */
+  const handleAddItem = (itemId: number) => {
+    const item = availableItems.find(i => i.id === itemId)
+    if (!item) return
+
+    const currentItems = editFormData.items || []
+    const existingItem = currentItems.find((i: any) => i.id === itemId)
+
+    if (existingItem) {
+      // Increase quantity
+      const updatedItems = currentItems.map((i: any) =>
+        i.id === itemId
+          ? { ...i, quantity: i.quantity + 1, totalAmount: (i.quantity + 1) * i.price }
+          : i
+      )
+      setEditFormData({
+        ...editFormData,
+        items: updatedItems,
+      })
+    } else {
+      // Add new item
+      const newItem = {
+        id: item.id,
+        itemName: item.itemName,
+        price: item.price,
+        description: item.description,
+        quantity: 1,
+        totalAmount: item.price,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      }
+      setEditFormData({
+        ...editFormData,
+        items: [...currentItems, newItem],
+      })
+    }
+  }
+
+  /**
+   * Hàm giảm số lượng món ăn
+   */
+  const handleDecreaseItemQuantity = (itemId: number) => {
+    const currentItems = editFormData.items || []
+    const item = currentItems.find((i: any) => i.id === itemId)
+    if (!item) return
+
+    if (item.quantity <= 1) {
+      // Remove item
+      setEditFormData({
+        ...editFormData,
+        items: currentItems.filter((i: any) => i.id !== itemId),
+      })
+    } else {
+      // Decrease quantity
+      const updatedItems = currentItems.map((i: any) =>
+        i.id === itemId
+          ? { ...i, quantity: i.quantity - 1, totalAmount: (i.quantity - 1) * i.price }
+          : i
+      )
+      setEditFormData({
+        ...editFormData,
+        items: updatedItems,
+      })
+    }
+  }
+
+  /**
+   * Hàm xóa món ăn
+   */
+  const handleRemoveItem = (itemId: number) => {
+    const currentItems = editFormData.items || []
+    setEditFormData({
+      ...editFormData,
+      items: currentItems.filter((i: any) => i.id !== itemId),
+    })
   }
 
   const handleTriggerImport = () => {
@@ -435,10 +688,10 @@ export default function QuanLyKhachMoiPage() {
                           <div
                             className="text-sm font-medium text-gray-900 cursor-pointer hover:text-orange-600"
                             onClick={() => handleViewDetails(person)}
-                          >
-                            {person.fullName}
-                          </div>
-                          <div className="text-sm text-gray-500">{person.email}</div>
+                            >
+                              {person.fullName}
+                            </div>
+                            <div className="text-sm text-gray-500">{person.email}</div>
                         </div>
                       </div>
                     </td>
@@ -467,13 +720,13 @@ export default function QuanLyKhachMoiPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleDeleteGuest(person)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleEditGuest(person)}>
                           <Edit className="w-4 h-4" />
                         </Button>
                       </div>
-                    </td>
+                      </td>
                   </tr>
                 ))
               ) : (
@@ -677,7 +930,7 @@ export default function QuanLyKhachMoiPage() {
 
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(48rem+3.125rem)] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa thông tin khách mời</DialogTitle>
           </DialogHeader>
@@ -692,7 +945,7 @@ export default function QuanLyKhachMoiPage() {
                 onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                 placeholder="Nhập email"
               />
-            </div>
+    </div>
 
             {/* Full Name */}
             <div className="space-y-2">
@@ -808,6 +1061,147 @@ export default function QuanLyKhachMoiPage() {
                   <span className="text-sm text-gray-500">{editAvatarFile.name}</span>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Seat Selection Section */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="w-5 h-5 text-orange-500" />
+              <h3 className="text-lg font-semibold">Ghế ngồi</h3>
+            </div>
+            
+            {editFormData.seatInfo ? (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Số ghế</p>
+                    <p className="text-lg font-semibold">{editFormData.seatInfo.seatNumber}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Giá: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(editFormData.seatInfo.paidPrice || 0)}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveSeat}
+                  >
+                    Xóa ghế
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Chọn ghế ngồi</label>
+                <Select
+                  value=""
+                  onValueChange={handleSeatChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn ghế..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(() => {
+                      // Lấy danh sách ghế đã được đặt bởi người khác
+                      const occupiedSeats = allPersons
+                        .filter(p => p.personId !== editingPerson?.personId && p.seatInfo?.seatNumber)
+                        .map(p => p.seatInfo!.seatNumber)
+                      
+                      // Filter ghế: chỉ hiển thị ghế chưa được book và chưa ai đặt
+                      const availableSeatsFiltered = availableSeats.filter(seat => 
+                        !seat.isBooked && !occupiedSeats.includes(seat.seatNumber)
+                      )
+                      
+                      return availableSeatsFiltered
+                        .sort((a, b) => a.seatNumber.localeCompare(b.seatNumber, undefined, { numeric: true }))
+                        .map((seat) => (
+                          <SelectItem key={seat.id} value={seat.seatNumber}>
+                            {seat.seatNumber} - {seat.type} ({new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(seat.paidPrice || 0)})
+                          </SelectItem>
+                        ))
+                    })()}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Chỉ hiển thị ghế trống chưa ai đặt
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Food Items Section */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Utensils className="w-5 h-5 text-orange-500" />
+              <h3 className="text-lg font-semibold">Món ăn & Đồ uống</h3>
+            </div>
+
+            {/* Selected Items */}
+            {editFormData.items && editFormData.items.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {editFormData.items.map((item: any) => (
+                  <div key={item.id} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium">{item.itemName}</p>
+                        <p className="text-sm text-gray-600">
+                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price || 0)} x {item.quantity}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDecreaseItemQuantity(item.id)}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{item.quantity}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddItem(item.id)}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">Tổng cộng:</span>
+                    <span className="text-lg font-bold text-orange-600">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                        (editFormData.items || []).reduce((sum: number, item: any) => sum + item.totalAmount, 0)
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Add Item Dropdown */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Thêm món</label>
+              <Select
+                value=""
+                onValueChange={(value) => handleAddItem(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn món để thêm..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableItems.map((item) => (
+                    <SelectItem key={item.id} value={String(item.id)}>
+                      {item.itemName} - {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price || 0)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

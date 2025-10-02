@@ -89,6 +89,7 @@ export interface RegistrationPayload {
   phone: string;
   gender: "MALE" | "FEMALE" | "OTHER";
   status: boolean;
+  isVip?: "SUPER_VIP" | "VIP" | "NORMAL";
   seatInfo: {
     seatNumber: string;
     paidPrice: number;

@@ -27,6 +27,7 @@ jest.mock("@/lib/cookies", () => ({
   getCookie: jest.fn(),
   deleteCookie: jest.fn(),
   hasCookie: jest.fn(),
+  clearAuthCookies: jest.fn(),
 }))
 
 // Wrapper component để cung cấp Provider cho hook
@@ -119,9 +120,7 @@ describe("useAuth Hook & AuthContext", () => {
     // Assert: Kiểm tra state, cookies và router
     expect(result.current.isAuthenticated).toBe(false)
     expect(result.current.user).toBeNull()
-    expect(cookieUtils.deleteCookie).toHaveBeenCalledWith("accessToken")
-    expect(cookieUtils.deleteCookie).toHaveBeenCalledWith("refreshToken")
-    expect(cookieUtils.deleteCookie).toHaveBeenCalledWith("user")
+    expect(cookieUtils.clearAuthCookies).toHaveBeenCalled()
     expect(mockRouterPush).toHaveBeenCalledWith("/login")
   })
 
