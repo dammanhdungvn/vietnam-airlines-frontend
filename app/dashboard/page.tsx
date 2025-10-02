@@ -118,15 +118,15 @@ export default function DashboardPage() {
 
   return (
     <PageContainer>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Thống kê</h1>
-          <p className="text-gray-600">Thể hiện tổng số khách và số tiền</p>
+        <div className="px-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Thống kê</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Thể hiện tổng số khách và số tiền</p>
         </div>
 
       {/* Customer Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {isLoading ? (
           // Hiển thị skeleton loading cho 3 cards
           Array.from({ length: 3 }).map((_, index) => (
@@ -152,7 +152,7 @@ export default function DashboardPage() {
                   <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stat.value}</div>
+                  <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
                 </CardContent>
               </Card>
             )
@@ -161,11 +161,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Revenue Section */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Tổng số tiền</h2>
-        <p className="text-gray-600 mb-4">Thống qua việc bán ghế và bán đồ ăn</p>
+      <div className="px-1">
+        <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-2">Tổng số tiền</h2>
+        <p className="text-sm sm:text-base text-gray-600 mb-4">Thống qua việc bán ghế và bán đồ ăn</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {isLoading ? (
             // Hiển thị skeleton loading cho 3 cards doanh thu
             Array.from({ length: 3 }).map((_, index) => (
@@ -191,7 +191,7 @@ export default function DashboardPage() {
                     <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold mb-1">{stat.value}</div>
+                    <div className="text-xl sm:text-2xl font-bold mb-1">{stat.value}</div>
                   </CardContent>
                 </Card>
               )
@@ -210,51 +210,51 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Thao tác nhanh</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Thao tác nhanh</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
             <a
               href="/quan-ly-khach-moi"
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <Users className="h-8 w-8 text-blue-600 mb-2" />
-              <span className="text-sm font-medium">Quản lý khách mời</span>
+              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm font-medium text-center">Quản lý khách mời</span>
             </a>
             <a
               href="/quan-ly-ghe"
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <Plane className="h-8 w-8 text-green-600 mb-2" />
-              <span className="text-sm font-medium">Quản lý ghế</span>
+              <Plane className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm font-medium text-center">Quản lý ghế</span>
             </a>
             <a
               href="/quan-ly-do-an"
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <UtensilsCrossed className="h-8 w-8 text-orange-600 mb-2" />
-              <span className="text-sm font-medium">Quản lý đồ ăn</span>
+              <UtensilsCrossed className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm font-medium text-center">Quản lý đồ ăn</span>
             </a>
             <a
               href="/quan-ly-tai-lieu"
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <FileText className="h-8 w-8 text-purple-600 mb-2" />
-              <span className="text-sm font-medium">Quản lý tài liệu</span>
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm font-medium text-center">Quản lý tài liệu</span>
             </a>
             <a
               href="/quan-ly-link-truc-tuyen"
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <Link className="h-8 w-8 text-indigo-600 mb-2" />
-              <span className="text-sm font-medium">Link trực tuyến</span>
+              <Link className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-600 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm font-medium text-center">Link trực tuyến</span>
             </a>
             <a
               href="/dang-ky-ho"
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <UserPlus className="h-8 w-8 text-red-600 mb-2" />
-              <span className="text-sm font-medium">Đăng ký hộ</span>
+              <UserPlus className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 mb-1 sm:mb-2" />
+              <span className="text-xs sm:text-sm font-medium text-center">Đăng ký hộ</span>
             </a>
           </div>
         </CardContent>

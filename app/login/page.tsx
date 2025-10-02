@@ -70,23 +70,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="h-screen flex">
-      <div className="flex-1 flex items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-md space-y-8">
-          <div className="flex items-center space-x-2 mb-8">
-            <div className="flex items-center">
-              <div className="w-70">
-                <img src={logoImage.src} alt="logo" />
-              </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Form Section - Full width on mobile, half on desktop */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-white">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
+          {/* Logo */}
+          <div className="flex items-center justify-center lg:justify-start mb-6 sm:mb-8">
+            <div className="w-48 sm:w-56 md:w-64 lg:w-70">
+              <img src={logoImage.src} alt="Vietnam Airlines Logo" className="w-full h-auto" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-gray-900">Đăng nhập</h2>
-            <p className="text-sm text-gray-600">Vui lòng điền thông tin của bạn</p>
+          {/* Heading */}
+          <div className="space-y-2 text-center lg:text-left">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Đăng nhập</h2>
+            <p className="text-sm sm:text-base text-gray-600">Vui lòng điền thông tin của bạn</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             <div className="space-y-2">
               <Label htmlFor="username" className="text-sm font-medium text-gray-700">
                 Username
@@ -94,9 +96,9 @@ export default function LoginPage() {
               <Input
                 id="username"
                 type="text"
-                placeholder="Nhập"
+                placeholder="Nhập tên đăng nhập"
                 {...register("username")}
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-10 sm:h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
               {errors.username && <p className="text-sm text-red-500">{errors.username.message}</p>}
             </div>
@@ -110,7 +112,7 @@ export default function LoginPage() {
                 type="password"
                 placeholder="••••••••"
                 {...register("password")}
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-10 sm:h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
               {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
             </div>
@@ -118,21 +120,22 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-medium rounded-md"
+              className="w-full h-10 sm:h-12 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-medium rounded-md text-sm sm:text-base"
             >
-              {isSubmitting ? "Đang đăng nhập..." : "Sign in"}
+              {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
           </form>
         </div>
       </div>
 
-    <div className="flex-1 h-full w-full bg-gradient-to-br flex items-center justify-center relative overflow-hidden">
-      <img 
-        src={planeImage.src} 
-        alt="plane" 
-        className=" w-full h-full object-cover" 
-      />
-    </div>
+      {/* Image Section - Hidden on mobile, visible on desktop */}
+      <div className="hidden lg:flex lg:flex-1 h-64 lg:h-auto w-full bg-gradient-to-br items-center justify-center relative overflow-hidden">
+        <img 
+          src={planeImage.src} 
+          alt="Vietnam Airlines Plane" 
+          className="w-full h-full object-cover" 
+        />
+      </div>
     </div>
   )
 }

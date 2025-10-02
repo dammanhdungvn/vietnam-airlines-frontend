@@ -319,36 +319,38 @@ export default function QuanLyGhePage() {
   return (
     <PageContainer>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý Ghế</h1>
-          <p className="text-gray-600 mt-1">Tổng cộng {seats.length} ghế</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Quản lý Ghế</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Tổng cộng {seats.length} ghế</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Làm mới
+        <div className="flex items-center gap-2 sm:space-x-3">
+          <Button variant="outline" size="sm" onClick={handleRefresh} className="flex-1 sm:flex-none">
+            <RefreshCw className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Làm mới</span>
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Export
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm mới
+          <Button size="sm" className="bg-orange-500 hover:bg-orange-600 flex-1 sm:flex-none">
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Thêm mới</span>
           </Button>
         </div>
       </div>
 
       {/* Sơ đồ ghế */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Sơ đồ ghế</h2>
-        <SeatMap seats={seats} />
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Sơ đồ ghế</h2>
+        <div className="overflow-x-auto">
+          <SeatMap seats={seats} />
+        </div>
       </div>
 
       {/* Danh sách ghế */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Danh sách ghế</h2>
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Danh sách ghế</h2>
         
         {/* Filters */}
         <div className="flex items-center space-x-4 mb-6">

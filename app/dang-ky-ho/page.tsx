@@ -601,8 +601,8 @@ export default function DangKyHoPage() {
         )
       case 2:
         return (
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="space-y-4">
+          <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <Label htmlFor="name">Họ và tên</Label>
                 <Input
@@ -624,9 +624,9 @@ export default function DangKyHoPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="font-medium">Đăng ký nhận diện tự động</h3>
-              <p className="text-sm text-gray-600">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium">Đăng ký nhận diện tự động</h3>
+              <p className="text-xs sm:text-sm text-gray-600">
                 * Ảnh được dùng để hỗ trợ nhận diện khi bạn đến Hội nghị, giúp thủ tục check-in diễn ra nhanh và thuận
                 tiện hơn. Thông tin sẽ được quản lý an toàn và được xóa bỏ ngay khi sự kiện kết thúc.
               </p>
@@ -678,16 +678,16 @@ export default function DangKyHoPage() {
         );
       case 4:
         return (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             {isLoadingItems ? (
                <div className="flex items-center justify-center h-64">
                 <div className="text-center" role="status">
-                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-500" />
-                  <p className="text-gray-600">Đang tải sản phẩm...</p>
+                  <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 animate-spin mx-auto mb-4 text-orange-500" />
+                  <p className="text-sm sm:text-base text-gray-600">Đang tải sản phẩm...</p>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {items.map((item) => (
                   <Card
                     key={item.id}
@@ -772,24 +772,33 @@ export default function DangKyHoPage() {
   }
 
   return (
-    <PageContainer className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Đăng ký hộ</h1>
-        <p className="text-gray-600 mt-2">Đăng ký hộ khách tại sự kiện</p>
+    <PageContainer className="p-4 sm:p-6 md:p-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">Đăng ký hộ</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Đăng ký hộ khách tại sự kiện</p>
       </div>
 
       {/* Chỉ báo bước */}
       <StepIndicator steps={steps} currentStep={currentStep} />
 
       {/* Nội dung bước hiện tại */}
-      <div className="mt-8 mb-8">{renderStepContent()}</div>
+      <div className="mt-6 sm:mt-8 mb-6 sm:mb-8">{renderStepContent()}</div>
 
       {/* Nút điều hướng */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
+      <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
+        <Button 
+          variant="outline" 
+          onClick={handleBack} 
+          disabled={currentStep === 1}
+          className="w-full sm:w-auto order-2 sm:order-1"
+        >
           Bỏ qua
         </Button>
-        <Button onClick={handleNext} className="bg-orange-500 hover:bg-orange-600" disabled={isUploadingFace}>
+        <Button 
+          onClick={handleNext} 
+          className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto order-1 sm:order-2" 
+          disabled={isUploadingFace}
+        >
           {isUploadingFace ? 'Đang xử lý...' : (currentStep === 4 ? "Hoàn tất" : "Tiếp tục")}
         </Button>
       </div>
