@@ -9,9 +9,9 @@ import { ClientLayout } from "@/components/client-layout"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Vietnam Airlines - Hệ thống quản lý sự kiện",
+  title: "Vietnam Airlines",
   description: "Hệ thống quản lý sự kiện và hội nghị Vietnam Airlines",
-    generator: 'v0.app'
+    creator: 'Đàm Mạnh Dũng'
 }
 
 export default function RootLayout({

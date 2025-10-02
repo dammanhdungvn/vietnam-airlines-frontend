@@ -134,7 +134,7 @@ export default function QuanLyTaiLieuPage() {
   const getFileIcon = (filePath: string) => {
     const extension = getFileExtension(filePath)
     const iconStyles = defaultStyles[extension as keyof typeof defaultStyles]
-    
+
     return (
       <div className="w-8 h-8">
         {iconStyles ? (
@@ -282,16 +282,16 @@ export default function QuanLyTaiLieuPage() {
                 <th className="w-4/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tên tài liệu
                 </th>
-                <th className="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-3/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tác giả
                 </th>
-                <th className="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày tạo
                 </th>
-                <th className="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày sửa
                 </th>
-                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-2/12 px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thao tác
                 </th>
               </tr>

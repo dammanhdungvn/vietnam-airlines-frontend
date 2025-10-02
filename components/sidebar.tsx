@@ -38,7 +38,7 @@ import { useAuth } from "@/context/AuthContext"
  * 2. Administrator (submenu)
  * 3. Đăng ký hộ
  */
-export function Sidebar() {
+export function Sidebar({ className = "", onNavigate }: { className?: string; onNavigate?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const [isAdminExpanded, setIsAdminExpanded] = useState(true)
@@ -78,7 +78,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="fixed top-0 left-0 h-full w-64 bg-white border-r shadow-sm z-50">
+    <aside className={cn("fixed top-0 left-0 h-full w-64 bg-white border-r shadow-sm z-50", className)}>
       {/* Logo Vietnam Airlines */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
@@ -103,6 +103,7 @@ export function Sidebar() {
                 ? "bg-orange-50 text-orange-700 border-r-2 border-orange-500"
                 : "text-gray-700 hover:bg-gray-100",
             )}
+            onClick={onNavigate}
           >
             <BarChart3 className="w-5 h-5" />
             <span>Thống kê</span>
@@ -138,6 +139,7 @@ export function Sidebar() {
                           ? "bg-orange-50 text-orange-700 border-r-2 border-orange-500"
                           : "text-gray-700 hover:bg-gray-100",
                       )}
+                      onClick={onNavigate}
                     >
                       <Icon className="w-4 h-4" />
                       <span>{item.title}</span>
@@ -157,6 +159,7 @@ export function Sidebar() {
                 ? "bg-orange-50 text-orange-700 border-r-2 border-orange-500"
                 : "text-gray-700 hover:bg-gray-100",
             )}
+            onClick={onNavigate}
           >
             <UserPlus className="w-5 h-5" />
             <span>Đăng ký hộ</span>
