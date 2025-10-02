@@ -1,73 +1,177 @@
-# Hướng dẫn Quản lý Link Trực tuyến
+# 🔗 Hướng Dẫn Quản Lý Link Trực Tuyến
 
-**Tác giả:** Dammand DUNG
-**Ngày tạo:** 27/09/2025
-**Phiên bản:** 1.0
+## 📋 Tổng Quan
+
+Quản lý các link meeting, webinar và tài liệu trực tuyến cho sự kiện.
+
+**URL**: `/quan-ly-link-truc-tuyen`
 
 ---
 
-## Giới thiệu
+## ✨ Tính Năng
 
-Trang "Quản lý Link Trực tuyến" cho phép quản trị viên quản lý danh sách các đường link (URL) stream. Chức năng này rất hữu ích để lưu trữ và truy cập nhanh các nguồn video, sự kiện trực tuyến, hoặc bất kỳ tài nguyên nào có thể truy cập qua URL.
+### 1. Danh Sách Link
+- Bảng với tên & URL
+- Click "Truy cập" → Mở tab mới
+- Tên dài tự động xuống dòng
+- Fixed width: 100vw
 
-Giao diện được thiết kế trực quan, dễ sử dụng, giúp quản trị viên thực hiện các thao tác một cách hiệu quả.
+### 2. Tìm Kiếm & Sắp Xếp
+- 🔍 Tìm theo tên hoặc URL
+- 📊 Sắp xếp: Tên link, URL
+- ⬆️⬇️ Tăng dần / Giảm dần
 
-## Các chức năng chính
+### 3. CRUD
+- ➕ Thêm link mới
+- ✏️ Sửa thông tin
+- 🗑️ Xóa (confirmation)
 
-Trang quản lý cung cấp đầy đủ các chức năng CRUD (Create, Read, Update, Delete) cho các link stream.
+### 4. Phân Trang
+- 10 links/page
+- Navigation: ← Trước | Sau →
+- Hiển thị: "X đến Y trong Z link"
 
-### 1. Xem danh sách Link
+---
 
-- **Mô tả:** Khi truy cập trang, hệ thống sẽ tự động tải và hiển thị danh sách tất cả các link stream hiện có.
-- **Cách thực hiện:**
-  - Truy cập vào mục "Quản lý link trực tuyến" từ thanh điều hướng bên trái.
-  - Danh sách các link sẽ được hiển thị trong một bảng, bao gồm các cột: Tên link, URL, và Thao tác.
-  - URL có thể nhấp vào để mở trong một tab mới.
+## 🔄 Quy Trình
 
-### 2. Thêm Link mới
+### Thêm Link
+```
+1. Click "Thêm link mới"
+2. Dialog form:
+   ├─ Tên link*
+   └─ URL*
+3. Validation:
+   ├─ URL format
+   └─ Required fields
+4. Click "Tạo"
+5. POST /streams → Reload
+```
 
-- **Mô tả:** Cho phép tạo một link stream mới.
-- **Cách thực hiện:**
-  1. Nhấn vào nút **"Thêm link mới"** ở góc trên bên phải màn hình.
-  2. Một hộp thoại (modal) sẽ xuất hiện.
-  3. Nhập **Tên link** và **URL** vào các trường tương ứng.
-  4. Nhấn nút **"Tạo mới"** để lưu link. Link mới sẽ xuất hiện trong danh sách.
-  5. Nhấn **"Hủy"** để đóng hộp thoại mà không lưu.
+### Sửa Link
+```
+1. Click icon "Sửa"
+2. Dialog với data hiện tại
+3. Chỉnh sửa
+4. Click "Cập nhật"
+5. PUT /streams/:id
+```
 
-### 3. Sửa thông tin Link
+### Xóa Link
+```
+1. Click icon "Xóa"
+2. Confirmation dialog
+3. Hiển thị tên link
+4. Click "Xóa" confirm
+5. DELETE /streams/:id
+```
 
-- **Mô tả:** Cho phép chỉnh sửa thông tin của một link đã tồn tại.
-- **Cách thực hiện:**
-  1. Trong danh sách, tìm link bạn muốn sửa và nhấn vào biểu tượng **cây bút (Edit)** ở cột "Thao tác".
-  2. Hộp thoại sẽ xuất hiện với thông tin hiện tại của link.
-  3. Chỉnh sửa **Tên link** hoặc **URL** theo ý muốn.
-  4. Nhấn **"Lưu thay đổi"** để cập nhật.
-  5. Nhấn **"Hủy"** để thoát mà không lưu.
+---
 
-### 4. Xóa Link
+## 💾 Dữ Liệu
 
-- **Mô tả:** Cho phép xóa một link khỏi hệ thống.
-- **Cách thực hiện:**
-  1. Tìm link bạn muốn xóa và nhấn vào biểu tượng **thùng rác (Delete)** ở cột "Thao tác".
-  2. Một hộp thoại xác nhận sẽ hiện ra để đảm bảo bạn không xóa nhầm.
-  3. Nhấn nút **"Xóa"** để xác nhận. Link sẽ bị xóa vĩnh viễn khỏi danh sách.
-  4. Nhấn **"Hủy"** nếu bạn không muốn xóa nữa.
+### Stream Interface
+```typescript
+interface Stream {
+  id: number
+  streamName: string
+  streamUrl: string
+}
+```
 
-### 5. Tìm kiếm và Sắp xếp
+---
 
-- **Tìm kiếm:**
-  - Sử dụng ô tìm kiếm ở phía trên bên phải của bảng.
-  - Bạn có thể nhập từ khóa để tìm kiếm theo **Tên link** hoặc **URL**. Danh sách sẽ tự động được lọc lại.
-- **Sắp xếp:**
-  - Sử dụng hộp chọn (dropdown) bên cạnh ô tìm kiếm.
-  - Bạn có thể sắp xếp danh sách theo **Tên link** hoặc **URL** theo thứ tự alphabet.
+## 📝 API
 
-## Tích hợp API
+### GET /streams
+```
+Response: Stream[]
+```
 
-Chức năng này được tích hợp với các API endpoint sau:
+### POST /streams
+```
+Body: {
+  streamName: string
+  streamUrl: string
+}
+```
 
-- `GET /api/v1/streams`: Lấy danh sách link.
-- `POST /api/v1/streams`: Tạo mới hoặc cập nhật link.
-- `GET /api/v1/streams/{id}`: Lấy chi tiết một link.
-- `DELETE /api/v1/streams/{id}`: Xóa một link.
+### PUT /streams/:id
+```
+Body: { streamName, streamUrl }
+```
 
+### DELETE /streams/:id
+```
+Response: 200 OK
+```
+
+---
+
+## 🎨 UI Features
+
+### Table Layout
+```typescript
+// Fixed width columns
+<table className="w-full table-fixed">
+  <th className="w-1/12">STT</th>
+  <th className="w-5/12">Tên link</th>
+  <th className="w-4/12">Đường dẫn</th>
+  <th className="w-2/12">Thao tác</th>
+</table>
+```
+
+### Link Display
+```typescript
+// Truncate & wrap long names
+<p className="break-words">{streamName}</p>
+
+// Access link
+<a href={streamUrl} target="_blank">
+  Truy cập →
+</a>
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Scroll Ngang
+```
+Fix:
+1. PageContainer wrapper
+2. table-fixed layout
+3. break-words cho text
+```
+
+### Link Không Mở
+```
+Check:
+1. URL valid?
+2. Protocol (http/https)?
+3. target="_blank" set?
+4. Popup blocker?
+```
+
+### Tên Không Wrap
+```
+Check:
+1. break-words applied?
+2. flex-1 min-w-0 set?
+3. Table layout fixed?
+```
+
+---
+
+## 💡 Tips
+
+- **URL Validation**: Check format trước khi save
+- **External Link**: Luôn mở tab mới
+- **Long Names**: Break words để tránh scroll
+- **Copy Link**: Thêm copy button (optional)
+
+---
+
+<div align="center">
+  📚 <a href="./DOCUMENT_MANAGEMENT_GUIDE.md">← Tài Liệu</a> | <a href="../README.md">Trang Chủ</a> | <a href="./CUSTOMER_REGISTRATION_GUIDE.md">Đăng Ký Hộ →</a>
+</div>

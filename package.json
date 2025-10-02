@@ -9,7 +9,12 @@
     "build:uat": "env-cmd -f .env.uat next build",
     "start:uat": "env-cmd -f .env.uat next start",
     "lint": "next lint",
-    "test": "jest"
+    "test": "jest",
+    "test:unit": "jest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:all": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -68,6 +73,7 @@
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@tailwindcss/postcss": "^4.1.9",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",

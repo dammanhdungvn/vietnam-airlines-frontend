@@ -6,6 +6,7 @@ import { Search, Filter, Upload, Plus, Star, Trash2, Edit, ChevronDown } from "l
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { PageContainer } from "@/components/page-container"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
-import { getPersonsPaginated, deletePerson, importPersons, addPerson, validateAndUploadFace } from "@/services/person.service"
+import { getPersonsPaginated, deletePerson, importPersons, addPerson, validateAndUploadFace, registerOrUpdatePerson } from "@/services/person.service"
 import { Person, PaginatedApiResponse, AddPersonPayload } from "@/types/person.type"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -106,21 +107,115 @@ export default function QuanLyKhachMoiPage() {
     }
   }
 
-  const handleViewDetails = (personEmail: string) => {
-    router.push(`/quan-ly-khach-moi/${personEmail}`)
+  // Edit modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null)
+  const [editFormData, setEditFormData] = useState<Partial<Person>>({})
+  const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  // Delete confirmation states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deletingPerson, setDeletingPerson] = useState<Person | null>(null)
+  
+  const editAvatarInputRef = useRef<HTMLInputElement>(null)
+
+  const handleViewDetails = (person: Person) => {
+    setEditingPerson(person)
+    setEditFormData({
+      email: person.email,
+      fullName: person.fullName,
+      phone: person.phone,
+      position: person.position,
+      gender: person.gender,
+      status: person.status,
+      isVip: person.isVip,
+    })
+    setIsEditModalOpen(true)
   }
 
-  const handleEditGuest = (personEmail: string) => {
-    router.push(`/quan-ly-khach-moi/${personEmail}`)
+  const handleEditGuest = (person: Person) => {
+    handleViewDetails(person)
   }
 
-  const handleDeleteGuest = async (person: Person) => {
+  const handleDeleteGuest = (person: Person) => {
+    setDeletingPerson(person)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingPerson) return
     try {
-      await deletePerson(person.personId)
-      toast.success(`Đã xóa khách mời "${person.fullName}".`)
-      fetchPersonsFull() // Tải lại danh sách sau khi xóa
+      await deletePerson(deletingPerson.personId)
+      toast.success(`Đã xóa khách mời "${deletingPerson.fullName}".`)
+      setIsDeleteDialogOpen(false)
+      setDeletingPerson(null)
+      fetchPersonsFull()
     } catch (error) {
-      toast.error(`Không thể xóa khách mời "${person.fullName}".`)
+      toast.error(`Không thể xóa khách mời "${deletingPerson.fullName}".`)
+    }
+  }
+
+  const handleEditAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setEditAvatarFile(file)
+    }
+  }
+
+  const handleUpdateSubmit = async () => {
+    if (!editingPerson) return
+    
+    setIsUpdating(true)
+    try {
+      // Upload avatar if changed
+      if (editAvatarFile) {
+        try {
+          await validateAndUploadFace(editingPerson.personId, editAvatarFile)
+        } catch (avatarError) {
+          toast.warning("Upload avatar thất bại, nhưng sẽ tiếp tục cập nhật thông tin.")
+        }
+      }
+
+      // Update person info
+      const payload: any = {
+        email: editFormData.email || editingPerson.email,
+        fullName: editFormData.fullName || editingPerson.fullName,
+        phone: editFormData.phone || editingPerson.phone,
+        position: editFormData.position || editingPerson.position,
+        gender: (editFormData.gender || editingPerson.gender) as any,
+        status: editFormData.status !== undefined ? editFormData.status : editingPerson.status,
+        isVip: editFormData.isVip || editingPerson.isVip,
+      }
+
+      // Include seat info if exists
+      if (editingPerson.seatInfo) {
+        payload.seatInfo = {
+          seatNumber: editingPerson.seatInfo.seatNumber,
+          paidPrice: editingPerson.seatInfo.paidPrice || 0,
+        }
+      }
+
+      // Include items if exists
+      if (editingPerson.items && editingPerson.items.length > 0) {
+        payload.items = editingPerson.items.map((item: any) => ({
+          itemId: item.id,
+          quantity: item.quantity,
+          paidAmount: item.totalAmount,
+        }))
+      }
+
+      await registerOrUpdatePerson(payload)
+      toast.success("Thông tin khách mời đã được cập nhật.")
+      setIsEditModalOpen(false)
+      setEditingPerson(null)
+      setEditFormData({})
+      setEditAvatarFile(null)
+      fetchPersonsFull()
+    } catch (error) {
+      toast.error("Không thể cập nhật thông tin khách mời.")
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -233,9 +328,10 @@ export default function QuanLyKhachMoiPage() {
   const isLastPage = pagination.page >= clientTotalPages - 1
 
   return (
-    <div className="min-h-screen">
+    <PageContainer>
       <input ref={fileInputRef} type="file" accept=".xlsx, .xls" onChange={handleImportFile} className="hidden" />
       <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+      <input ref={editAvatarInputRef} type="file" accept="image/*" onChange={handleEditAvatarChange} className="hidden" />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -338,11 +434,11 @@ export default function QuanLyKhachMoiPage() {
                         <div>
                           <div
                             className="text-sm font-medium text-gray-900 cursor-pointer hover:text-orange-600"
-                              onClick={() => handleViewDetails(person.email)}
-                            >
-                              {person.fullName}
-                            </div>
-                            <div className="text-sm text-gray-500">{person.email}</div>
+                            onClick={() => handleViewDetails(person)}
+                          >
+                            {person.fullName}
+                          </div>
+                          <div className="text-sm text-gray-500">{person.email}</div>
                         </div>
                       </div>
                     </td>
@@ -370,36 +466,14 @@ export default function QuanLyKhachMoiPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Xác nhận xóa khách mời</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  Bạn có chắc chắn muốn xóa khách mời "{person.fullName}"? Hành động này không thể hoàn
-                                  tác.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Hủy</AlertDialogCancel>
-                              <AlertDialogAction
-                                  onClick={() => handleDeleteGuest(person)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Xóa
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                          <Button variant="ghost" size="sm" onClick={() => handleEditGuest(person.email)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteGuest(person)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleEditGuest(person)}>
                           <Edit className="w-4 h-4" />
                         </Button>
                       </div>
-                      </td>
+                    </td>
                   </tr>
                 ))
               ) : (
@@ -600,6 +674,222 @@ export default function QuanLyKhachMoiPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa thông tin khách mời</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-4">
+            {/* Email */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email*</label>
+              <Input
+                type="email"
+                value={editFormData.email || ""}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                placeholder="Nhập email"
+              />
+            </div>
+
+            {/* Full Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Họ và tên*</label>
+              <Input
+                value={editFormData.fullName || ""}
+                onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                placeholder="Nhập họ và tên"
+              />
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Số điện thoại</label>
+              <Input
+                value={editFormData.phone || ""}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                placeholder="Nhập số điện thoại"
+              />
+            </div>
+
+            {/* Position */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Chức vụ</label>
+              <Input
+                value={editFormData.position || ""}
+                onChange={(e) => setEditFormData({ ...editFormData, position: e.target.value })}
+                placeholder="Nhập chức vụ"
+              />
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Giới tính</label>
+              <Select
+                value={editFormData.gender || ""}
+                onValueChange={(value: "MALE" | "FEMALE" | "OTHER") =>
+                  setEditFormData({ ...editFormData, gender: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn giới tính" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MALE">Nam</SelectItem>
+                  <SelectItem value="FEMALE">Nữ</SelectItem>
+                  <SelectItem value="OTHER">Khác</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Trạng thái</label>
+              <Select
+                value={editFormData.status ? "TRUE" : "FALSE"}
+                onValueChange={(value: "TRUE" | "FALSE") => 
+                  setEditFormData({ ...editFormData, status: value === "TRUE" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TRUE">Hoạt động</SelectItem>
+                  <SelectItem value="FALSE">Không hoạt động</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* VIP */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Loại khách</label>
+              <Select
+                value={editFormData.isVip || ""}
+                onValueChange={(value: "SUPER_VIP" | "VIP" | "NORMAL") => 
+                  setEditFormData({ ...editFormData, isVip: value as any })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn loại khách" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SUPER_VIP">Siêu VIP</SelectItem>
+                  <SelectItem value="VIP">VIP</SelectItem>
+                  <SelectItem value="NORMAL">Thường</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Avatar Upload */}
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium">Ảnh đại diện</label>
+              <div className="flex items-center space-x-4">
+                {editingPerson?.avatarUrl && !editAvatarFile && (
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300">
+                    <img
+                      src={`data:image/jpeg;base64,${editingPerson.avatarUrl}`}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => editAvatarInputRef.current?.click()}
+                >
+                  {editAvatarFile ? "Thay đổi ảnh" : "Chọn ảnh mới"}
+                </Button>
+                {editAvatarFile && (
+                  <span className="text-sm text-gray-500">{editAvatarFile.name}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)} disabled={isUpdating}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={handleUpdateSubmit} 
+              className="bg-orange-500 hover:bg-orange-600"
+              disabled={isUpdating}
+            >
+              {isUpdating ? "Đang xử lý..." : "Cập nhật"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa khách mời</DialogTitle>
+          </DialogHeader>
+
+          {deletingPerson && (
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-gray-600">
+                Bạn có chắc chắn muốn xóa khách mời sau? Hành động này không thể hoàn tác.
+              </p>
+              
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3 border border-gray-200">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Họ và tên</p>
+                    <p className="text-sm font-medium text-gray-900">{deletingPerson.fullName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Email</p>
+                    <p className="text-sm font-medium text-gray-900">{deletingPerson.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Số điện thoại</p>
+                    <p className="text-sm font-medium text-gray-900">{deletingPerson.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Chức vụ</p>
+                    <p className="text-sm font-medium text-gray-900">{deletingPerson.position}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Giới tính</p>
+                    <p className="text-sm font-medium text-gray-900">{translateGender(deletingPerson.gender)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Loại khách</p>
+                    <Badge className={
+                      deletingPerson.isVip === "SUPER_VIP" ? "bg-purple-100 text-purple-800" :
+                      deletingPerson.isVip === "VIP" ? "bg-yellow-100 text-yellow-800" :
+                      "bg-gray-100 text-gray-800"
+                    }>
+                      {deletingPerson.isVip === "SUPER_VIP" ? "Siêu VIP" : 
+                       deletingPerson.isVip === "VIP" ? "VIP" : "Thường"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </PageContainer>
   )
 }

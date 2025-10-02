@@ -22,6 +22,7 @@ import { FileIcon, defaultStyles } from "react-file-icon"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PageContainer } from "@/components/page-container"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -58,6 +59,8 @@ export default function QuanLyTaiLieuPage() {
   const [documents, setDocuments] = useState<IDocument[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -96,6 +99,33 @@ export default function QuanLyTaiLieuPage() {
         doc.author.toLowerCase().includes(searchTerm.toLowerCase()),
     )
   }, [searchTerm, documents])
+
+  // Tính toán pagination
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentItems = filteredData.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1)
+    }
+  }
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1)
+    }
+  }
+
+  // Reset về trang 1 khi search
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
 
   const getFileExtension = (filePath: string): string => {
     return filePath.split(".").pop()?.toLowerCase() || "file"
@@ -208,7 +238,7 @@ export default function QuanLyTaiLieuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageContainer>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -242,23 +272,26 @@ export default function QuanLyTaiLieuPage() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="w-full">
+          <table className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  STT
+                </th>
+                <th className="w-4/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tên tài liệu
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tác giả
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày tạo
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày sửa
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thao tác
                 </th>
               </tr>
@@ -283,19 +316,28 @@ export default function QuanLyTaiLieuPage() {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((doc, index) => (
+                currentItems.map((doc, index) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {getFileIcon(doc.filePath)}
-                        <span className="ml-3 text-sm font-medium text-gray-900">{doc.documentName}</span>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {startIndex + index + 1}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          {getFileIcon(doc.filePath)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 break-words">{doc.documentName}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{doc.author}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(doc.createdAt)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(doc.updatedAt)}</td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm text-gray-900 break-words">{doc.author}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900 break-words">{formatDate(doc.createdAt)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 break-words">{formatDate(doc.updatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center space-x-2">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -339,6 +381,49 @@ export default function QuanLyTaiLieuPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {filteredData.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Hiển thị {startIndex + 1} đến {Math.min(endIndex, filteredData.length)} trong tổng số {filteredData.length} tài liệu
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentPage === 1}>
+                ← Trước
+              </Button>
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(page)}
+                    className={currentPage === page ? "bg-orange-500 text-white" : ""}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                {totalPages > 5 && (
+                  <>
+                    <span className="text-sm text-gray-500">...</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(totalPages)}
+                      className={currentPage === totalPages ? "bg-orange-500 text-white" : ""}
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentPage === totalPages}>
+                Sau →
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}
@@ -448,6 +533,6 @@ export default function QuanLyTaiLieuPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }

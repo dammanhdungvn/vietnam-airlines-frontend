@@ -1,9 +1,10 @@
 /**
- * @file Unit tests for person service
- * @description This file contains unit tests for the person service, mocking API calls.
- * @author Dammand DUNG
- * @version 1.0
- * @since 28/09/2025
+ * @fileoverview Unit tests cho person service
+ * @description File này chứa các unit tests cho person service, mock các API calls để test logic.
+ * Kiểm tra các chức năng: lấy danh sách, thêm, sửa, xóa khách mời, và xác thực khuôn mặt.
+ * @version 2.0.0
+ * @since 2025-10-03
+ * @author Dũng Đàm
  */
 
 import {
@@ -20,12 +21,14 @@ import { Person, RegistrationPayload, AddPersonPayload, FaceValidationResponseDa
 import { StreamApiResponse } from "@/types/stream.type";
 import { PaginatedApiResponse } from "@/types/person.type";
 
-// Mock the api module
+// Mock module api
 jest.mock("@/lib/api");
 const mockedApi = api as jest.Mocked<typeof api>;
 
 describe("Person Service", () => {
-  // Clear all mocks after each test
+  /**
+   * Dọn dẹp tất cả mocks sau mỗi test
+   */
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -60,6 +63,9 @@ describe("Person Service", () => {
   };
 
   describe("getPersonsPaginated", () => {
+    /**
+     * @test Lấy danh sách phân trang với params mặc định
+     */
     it("should fetch paginated persons successfully with default params", async () => {
       const mockApiResponse: { data: StreamApiResponse<PaginatedApiResponse<Person>> } = {
         data: {
@@ -83,6 +89,9 @@ describe("Person Service", () => {
       expect(result).toEqual(mockPaginatedResponse);
     });
 
+    /**
+     * @test Lấy danh sách phân trang với params tùy chỉnh
+     */
     it("should fetch paginated persons successfully with custom params", async () => {
       const mockApiResponse: { data: StreamApiResponse<PaginatedApiResponse<Person>> } = {
         data: {
@@ -102,6 +111,9 @@ describe("Person Service", () => {
       expect(result).toEqual({ ...mockPaginatedResponse, page: 1, size: 5 });
     });
 
+    /**
+     * @test Xử lý lỗi khi lấy danh sách thất bại
+     */
     it("should throw an error if fetching fails", async () => {
       mockedApi.get.mockRejectedValue(new Error("API Error"));
       await expect(getPersonsPaginated()).rejects.toThrow("API Error");

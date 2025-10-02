@@ -5,18 +5,51 @@ import { usePathname, useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { useAuth } from "@/context/AuthContext"
+import { getCookie } from "@/lib/cookies"
 
+/**
+ * @fileoverview ClientLayout component - Layout chính cho ứng dụng
+ * @description Xử lý authentication check và redirect, hiển thị sidebar cho trang đã auth
+ * @version 2.0.0
+ * @since 2025-10-03
+ * @author Dũng Đàm
+ */
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isAuthenticated, isLoading } = useAuth()
   const isLoginPage = pathname === "/login"
 
+  /**
+   * Effect để xử lý redirect dựa trên trạng thái authentication
+   * Sử dụng router.replace để tránh tạo history entry, giúp redirect nhanh hơn
+   */
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && !isLoginPage) {
-      router.push("/login")
+    if (!isLoading) {
+      // Nếu chưa đăng nhập và không ở trang login, chuyển đến trang login
+      if (!isAuthenticated && !isLoginPage) {
+        router.replace("/login")
+      }
+      // Nếu đã đăng nhập và đang ở trang login, chuyển đến dashboard
+      if (isAuthenticated && isLoginPage) {
+        router.replace("/dashboard")
+      }
     }
   }, [isAuthenticated, isLoading, isLoginPage, router])
+
+  /**
+   * Effect để check cookie trực tiếp và redirect ngay lập tức
+   * Giúp tránh flash loading screen khi đã có cookie
+   */
+  useEffect(() => {
+    if (isLoginPage) {
+      const token = getCookie("accessToken")
+      if (token) {
+        // Đã có token, redirect ngay không cần chờ AuthContext
+        router.replace("/dashboard")
+      }
+    }
+  }, [isLoginPage, router])
 
   if (isLoading) {
     return (

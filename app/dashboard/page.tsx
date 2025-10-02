@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsChart } from "@/components/stats-chart"
+import { PageContainer } from "@/components/page-container"
 import { toast } from "sonner"
 import { getStatistics } from "@/services/statistics.service"
 import { IStatisticsData } from "@/types/statistics.type"
@@ -116,12 +117,13 @@ export default function DashboardPage() {
   ] : []
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Thống kê</h1>
-        <p className="text-gray-600">Thể hiện tổng số khách và số tiền</p>
-      </div>
+    <PageContainer>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Thống kê</h1>
+          <p className="text-gray-600">Thể hiện tổng số khách và số tiền</p>
+        </div>
 
       {/* Customer Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -257,6 +259,7 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PageContainer>
   )
 }

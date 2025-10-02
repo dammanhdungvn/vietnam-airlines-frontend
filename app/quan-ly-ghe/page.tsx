@@ -5,6 +5,7 @@ import { Search, Filter, Download, Plus, Trash2, Edit, RefreshCw, ChevronDown } 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { PageContainer } from "@/components/page-container"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -304,17 +305,19 @@ export default function QuanLyGhePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center" role="status">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-500" />
-          <p className="text-gray-600">Đang tải dữ liệu ghế...</p>
+      <PageContainer>
+        <div className="min-h-[50vh] flex items-center justify-center">
+          <div className="text-center" role="status">
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-500" />
+            <p className="text-gray-600">Đang tải dữ liệu ghế...</p>
+          </div>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="min-h-screen">
+    <PageContainer>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -632,6 +635,6 @@ export default function QuanLyGhePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }

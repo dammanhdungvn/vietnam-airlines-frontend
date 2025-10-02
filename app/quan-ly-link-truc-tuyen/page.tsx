@@ -5,6 +5,7 @@ import { Search, Filter, Download, Plus, Trash2, Edit, ChevronDown } from "lucid
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { PageContainer } from "@/components/page-container"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -147,7 +148,7 @@ export default function QuanLyLinkTrucTuyenPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageContainer>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -188,17 +189,20 @@ export default function QuanLyLinkTrucTuyenPage() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="w-full">
+          <table className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  STT
+                </th>
+                <th className="w-5/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tên link
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  URL
+                <th className="w-4/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Đường dẫn
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thao tác
                 </th>
               </tr>
@@ -206,32 +210,27 @@ export default function QuanLyLinkTrucTuyenPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {currentItems.map((stream, index) => (
                 <tr key={stream.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="mr-4 text-sm text-gray-500">{startIndex + index + 1}</span>
-                      <span className="text-sm font-medium text-gray-900">{stream.streamName}</span>
-                    </div>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {startIndex + index + 1}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 max-w-md">
+                  <td className="px-6 py-4">
+                    <p className="text-sm font-medium text-gray-900 break-words">{stream.streamName}</p>
+                  </td>
+                  <td className="px-6 py-4">
                     <a
                       href={stream.streamUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="truncate text-blue-600 hover:underline"
+                      className="text-blue-600 hover:underline text-sm inline-flex items-center gap-1"
                     >
                       Truy cập
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
                     </a>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-6 py-4 text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(stream)}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -239,6 +238,14 @@ export default function QuanLyLinkTrucTuyenPage() {
                         className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                       >
                         <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(stream)}
+                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </td>
@@ -250,63 +257,43 @@ export default function QuanLyLinkTrucTuyenPage() {
 
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
-            ← Previous
-          </Button>
-          <div className="flex items-center space-x-2">
-            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
-              const page = i + 1
-              if (totalPages <= 10) {
-                return (
-                  <Button
-                    key={page}
-                    variant="outline"
-                    size="sm"
-                    className={currentPage === page ? "bg-orange-500 text-white" : ""}
-                    onClick={() => goToPage(page)}
-                  >
-                    {page}
-                  </Button>
-                )
-              }
-
-              // Logic cho nhiều trang
-              if (page <= 3 || page > totalPages - 3 || Math.abs(page - currentPage) <= 1) {
-                return (
-                  <Button
-                    key={page}
-                    variant="outline"
-                    size="sm"
-                    className={currentPage === page ? "bg-orange-500 text-white" : ""}
-                    onClick={() => goToPage(page)}
-                  >
-                    {page}
-                  </Button>
-                )
-              } else if (page === 4 && currentPage > 5) {
-                return (
-                  <span key="dots1" className="text-sm text-gray-500">
-                    ...
-                  </span>
-                )
-              } else if (page === totalPages - 3 && currentPage < totalPages - 4) {
-                return (
-                  <span key="dots2" className="text-sm text-gray-500">
-                    ...
-                  </span>
-                )
-              }
-              return null
-            })}
+          <div className="text-sm text-gray-700">
+            Hiển thị {startIndex + 1} đến {Math.min(endIndex, filteredData.length)} trong tổng số {filteredData.length} link
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next →
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+              ← Trước
+            </Button>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(page)}
+                  className={currentPage === page ? "bg-orange-500 text-white" : ""}
+                >
+                  {page}
+                </Button>
+              ))}
+              {totalPages > 5 && (
+                <>
+                  <span className="text-sm text-gray-500">...</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(totalPages)}
+                    className={currentPage === totalPages ? "bg-orange-500 text-white" : ""}
+                  >
+                    {totalPages}
+                  </Button>
+                </>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
+              Sau →
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -373,6 +360,6 @@ export default function QuanLyLinkTrucTuyenPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }

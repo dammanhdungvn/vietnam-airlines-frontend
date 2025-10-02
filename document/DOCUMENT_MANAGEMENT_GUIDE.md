@@ -1,88 +1,189 @@
-# Hướng dẫn Chức năng Quản lý Tài liệu
+# 📄 Hướng Dẫn Quản Lý Tài Liệu
 
-Tài liệu này cung cấp hướng dẫn chi tiết về chức năng Quản lý Tài liệu trên trang quản trị của Vietnam Airlines.
+## 📋 Tổng Quan
 
-## 1. Tổng quan
+Quản lý tài liệu số với upload, preview và phân loại đa dạng.
 
-Chức năng này cho phép quản trị viên thực hiện các thao tác đầy đủ (CRUD - Create, Read, Update, Delete) đối với các tài liệu nội bộ, bao gồm việc tải lên các file đính kèm.
+**URL**: `/quan-ly-tai-lieu`
 
-## 2. Giao diện chính
+---
 
-Trang Quản lý Tài liệu có địa chỉ: `/quan-ly-tai-lieu`
+## ✨ Tính Năng
 
-Giao diện bao gồm các thành phần chính:
+### 1. Upload Tài Liệu
+- **Formats**: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX
+- **Size**: Tối đa 10MB
+- **Preview**: Icon theo file type
 
--   **Thanh tiêu đề và nút hành động**:
-    -   `Thêm tài liệu`: Mở hộp thoại (dialog) để tải lên một tài liệu mới.
--   **Thanh tìm kiếm**:
-    -   Cho phép tìm kiếm nhanh chóng theo **Tên tài liệu** hoặc **Tác giả**. Danh sách sẽ tự động được lọc lại khi người dùng nhập.
--   **Bảng danh sách tài liệu**:
-    -   Hiển thị các tài liệu hiện có với các thông tin: Tên tài liệu, Tác giả, Ngày tạo, Ngày sửa.
-    -   Mỗi hàng trong bảng đi kèm với một bộ các nút thao tác:
-        -   **Xóa (Trash Can)**: Xóa tài liệu khỏi hệ thống (có hộp thoại xác nhận).
-        -   **Sửa (Pencil)**: Mở hộp thoại để cập nhật thông tin hoặc thay thế file đính kèm của tài liệu.
-        -   **Xem chi tiết (Eye)**: Mở file tài liệu trong một tab mới của trình duyệt để xem trước.
-        -   **Tải xuống (Download)**: Bắt đầu quá trình tải file tài liệu về máy.
+### 2. Danh Sách
+- Bảng với icon file
+- Tên tài liệu, tác giả
+- Ngày tạo/sửa
+- Phân trang: 10 items/page
 
-## 3. Luồng hoạt động chi tiết
+### 3. Preview & Download
+- 👁️ Preview: Mở tab mới
+- ⬇️ Download: Tải file gốc
 
-### 3.1. Xem danh sách và Tìm kiếm
+### 4. CRUD Operations
+- ✏️ Sửa: Tên, tác giả, file
+- 🗑️ Xóa: Với confirmation
 
--   Khi truy cập trang, hệ thống sẽ tự động gọi API để lấy và hiển thị toàn bộ danh sách tài liệu.
--   Trong khi tải, một chỉ báo "Đang tải dữ liệu..." sẽ xuất hiện.
--   Người dùng có thể nhập vào ô tìm kiếm để lọc danh sách một cách nhanh chóng.
+---
 
-### 3.2. Thêm mới Tài liệu
+## 🔄 Quy Trình
 
-1.  Nhấn nút **"Thêm tài liệu"**.
-2.  Hộp thoại "Thêm tài liệu mới" sẽ xuất hiện.
-3.  Điền các thông tin bắt buộc: **Tên tài liệu**, **Tên tác giả**.
-4.  Nhấn vào khu vực tải lên để **chọn file** từ máy tính (bắt buộc).
-5.  Nhấn nút **"Thêm tài liệu"** để xác nhận.
-6.  Hệ thống sẽ gửi yêu cầu API, nếu thành công, danh sách sẽ được làm mới và một thông báo thành công sẽ hiển thị.
+### Upload Tài Liệu
+```
+1. Click "Thêm tài liệu"
+2. Dialog form:
+   ├─ Tên tài liệu*
+   ├─ Tác giả*
+   └─ File đính kèm*
+3. Chọn file:
+   ├─ Drag & drop
+   └─ Click "Chọn file"
+4. Preview file selected
+5. Click "Tải lên"
+6. POST /documents → Reload
+```
 
-### 3.3. Chỉnh sửa Tài liệu
+### Sửa Tài Liệu
+```
+1. Click icon "Sửa"
+2. Modal với info hiện tại
+3. Update:
+   ├─ Tên/Tác giả
+   └─ File mới (optional)
+4. Click "Cập nhật"
+5. PUT /documents/:id
+```
 
-1.  Nhấn vào biểu tượng **Sửa (cây bút)** ở hàng của tài liệu cần cập nhật.
-2.  Hộp thoại "Sửa tài liệu" hiện ra với thông tin cũ đã được điền sẵn.
-3.  Thay đổi Tên tài liệu hoặc Tác giả nếu cần.
-4.  Nếu muốn thay thế file đính kèm, người dùng có thể chọn một file mới. Nếu không, file cũ sẽ được giữ lại.
-5.  Nhấn nút **"Cập nhật"** để lưu thay đổi.
+### Xóa Tài Liệu
+```
+1. Click icon "Xóa"
+2. Alert dialog confirmation
+3. Hiển thị tên tài liệu
+4. Click "Xóa" xác nhận
+5. DELETE /documents/:id
+```
 
-### 3.4. Xóa Tài liệu
+---
 
-1.  Nhấn vào biểu tượng **Xóa (thùng rác)**.
-2.  Một hộp thoại xác nhận sẽ hiện ra để đảm bảo người dùng không xóa nhầm.
-3.  Nhấn **"Xóa"** để xác nhận. Tài liệu sẽ bị xóa vĩnh viễn và danh sách được cập nhật.
+## 💾 Dữ Liệu
 
-### 3.5. Xem và Tải xuống
+### IDocument Interface
+```typescript
+interface IDocument {
+  id: number
+  documentName: string
+  author: string
+  filePath: string
+  fileUrl: string
+  createdAt: string
+  updatedAt: string
+}
+```
 
--   Nhấn vào biểu tượng **Xem (mắt)** sẽ mở trực tiếp `fileUrl` của tài liệu trong một tab mới, cho phép xem trước nhanh chóng.
--   Nhấn vào biểu tượng **Tải xuống (download)** sẽ kích hoạt việc tải file về máy tính của người dùng thông qua endpoint download của API.
+---
 
-## 4. Tích hợp API
+## 📝 API
 
-### 4.1. Lấy danh sách tài liệu
+### GET /documents
+```
+Response: IDocument[]
+```
 
--   **Endpoint**: `GET /api/v1/documents/all`
--   **Phương thức**: `GET`
+### POST /documents
+```
+Body: FormData
+  - documentName: string
+  - author: string
+  - file: File
 
-### 4.2. Tạo mới / Cập nhật tài liệu
+Response: {
+  id: number
+  documentName: string
+  filePath: string
+  fileUrl: string
+}
+```
 
--   **Endpoint**: `POST /api/v1/documents`
--   **Phương thức**: `POST`
--   **Body**: `multipart/form-data`
-    -   `document`: Một chuỗi JSON chứa `{ "documentName": "string", "author": "string", "id": number (chỉ khi cập nhật) }`.
-    -   `file`: File được tải lên.
+### PUT /documents/:id
+```
+Body: FormData (optional file)
+```
 
-### 4.3. Xóa tài liệu
+### DELETE /documents/:id
+```
+Response: 200 OK
+```
 
--   **Endpoint**: `DELETE /api/v1/documents/{id}`
--   **Phương thức**: `DELETE`
--   **Path Variable**: `id` - ID của tài liệu cần xóa.
+### GET /documents/:id/download
+```
+Response: File download
+```
 
-### 4.4. Tải xuống tài liệu
+---
 
--   **Endpoint**: `GET /api/v1/documents/{id}/download`
--   **Phương thức**: `GET`
--   **Path Variable**: `id` - ID của tài liệu cần tải.
+## 🎨 File Icons
+
+### Icon Mapping
+```typescript
+// react-file-icon
+const getFileIcon = (filePath: string) => {
+  const ext = filePath.split('.').pop()
+  return <FileIcon extension={ext} />
+}
+```
+
+### Supported Extensions
+- 📕 PDF
+- 📘 DOC, DOCX
+- 📗 XLS, XLSX
+- 📙 PPT, PPTX
+- 📄 Default
+
+---
+
+## 🔧 Troubleshooting
+
+### Upload Failed
+```
+Check:
+1. File size < 10MB?
+2. Format supported?
+3. FormData đúng?
+4. Network stable?
+```
+
+### Preview Không Mở
+```
+Check:
+1. fileUrl valid?
+2. Popup blocker?
+3. CORS configured?
+```
+
+### Icon Không Hiển Thị
+```
+Check:
+1. Extension parsed đúng?
+2. react-file-icon imported?
+3. Default icon fallback?
+```
+
+---
+
+## 💡 Tips
+
+- **Drag & Drop**: User-friendly upload
+- **Preview**: Xem trước không tải
+- **File validate**: Client-side trước khi upload
+- **Progress bar**: Hiển thị upload progress (optional)
+
+---
+
+<div align="center">
+  📚 <a href="./FOOD_MANAGEMENT_GUIDE.md">← Đồ Ăn</a> | <a href="../README.md">Trang Chủ</a> | <a href="./STREAM_MANAGEMENT_GUIDE.md">Link Trực Tuyến →</a>
+</div>

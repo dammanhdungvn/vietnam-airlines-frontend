@@ -1,139 +1,204 @@
-# Hướng dẫn sử dụng chức năng Quản lý Khách mời
+# 👥 Hướng Dẫn Quản Lý Khách Mời
 
-Tài liệu này cung cấp hướng dẫn chi tiết về cách sử dụng các tính năng trong trang Quản lý Khách mời của hệ thống Vietnam Airlines.
+## 📋 Tổng Quan
 
-## Mục lục
+Quản lý thông tin khách mời tham gia sự kiện với đầy đủ tính năng CRUD, import/export và xử lý avatar.
 
-1.  [Truy cập trang Quản lý Khách mời](#1-truy-cập-trang-quản-lý-khách-mời)
-2.  [Giao diện chính](#2-giao-diện-chính)
-3.  [Các chức năng chính](#3-các-chức-năng-chính)
-    *   [3.1. Xem danh sách khách mời](#31-xem-danh-sách-khách-mời)
-    *   [3.2. Tìm kiếm và Sắp xếp](#32-tìm-kiếm-và-sắp-xếp)
-    *   [3.3. Phân trang](#33-phân-trang)
-    *   [3.4. Thêm mới khách mời](#34-thêm-mới-khách-mời)
-    *   [3.5. Import khách mời từ file Excel](#35-import-khách-mời-từ-file-excel)
-    *   [3.6. Xem chi tiết khách mời](#36-xem-chi-tiết-khách-mời)
-    *   [3.7. Chỉnh sửa thông tin khách mời](#37-chỉnh-sửa-thông-tin-khách-mời)
-    *   [3.8. Xóa khách mời](#38-xóa-khách-mời)
-    *   [3.9. Luồng xử lý ảnh đại diện](#39-luồng-xử-lý-ảnh-đại-diện)
+**URL**: `/quan-ly-khach-moi`
 
 ---
 
-### 1. Truy cập trang Quản lý Khách mời
+## ✨ Tính Năng Chính
 
-Để truy cập trang, từ thanh điều hướng bên trái (sidebar), chọn mục **"Quản lý khách mời"**.
+### 1. Xem Danh Sách
+- Bảng hiển thị đầy đủ thông tin
+- Badge VIP/Thường
+- Trạng thái Hoạt động/Không hoạt động
+- Avatar preview
 
--   URL: `http://localhost:3000/quan-ly-khach-moi`
+### 2. Tìm Kiếm & Lọc
+- 🔍 Tìm theo: Tên, Email, Chức vụ
+- 📊 Sắp xếp: ID, Tên, Email (asc/desc)
+- 📄 Phân trang: 10 items/page
 
-### 2. Giao diện chính
+### 3. Thêm Mới
+- Form đầy đủ với validation
+- Upload avatar (Base64)
+- Phân loại: Siêu VIP / VIP / Thường
 
-Giao diện chính bao gồm:
--   **Thanh chức năng:** Chứa các nút "Import" và "Thêm mới".
--   **Bộ lọc và tìm kiếm:** Cho phép tìm kiếm theo tên, email, chức vụ và sắp xếp danh sách.
--   **Bảng danh sách khách mời:** Hiển thị các thông tin cơ bản của khách mời.
--   **Thanh phân trang:** Dùng để điều hướng qua các trang của danh sách.
+### 4. Import CSV
+- Upload file Excel
+- Batch create nhiều khách
+- Download template
 
-### 3. Các chức năng chính
+### 5. Chỉnh Sửa
+- Modal popup (không reload page)
+- Update avatar
+- Real-time validation
 
-#### 3.1. Xem danh sách khách mời
+### 6. Xóa
+- Confirmation dialog
+- Hiển thị thông tin đầy đủ
+- Không thể hoàn tác
 
-Khi truy cập, trang sẽ tự động tải và hiển thị danh sách khách mời đã đăng ký trong hệ thống.
-Thông tin hiển thị trong bảng bao gồm:
--   **Tên khách mời** và **Email**
--   **Số điện thoại**
--   **Chức vụ**
--   **Giới tính**
--   **Trạng thái** (`Hoạt động` hoặc `Không hoạt động`)
--   **VIP:** Biểu tượng ngôi sao nếu là khách VIP.
--   **Thao tác:** Các nút để Chỉnh sửa hoặc Xóa.
+---
 
-#### 3.2. Tìm kiếm và Sắp xếp
+## 🔄 Quy Trình
 
--   **Tìm kiếm:** Nhập từ khóa (tên, email, hoặc chức vụ) vào ô tìm kiếm ở góc trên bên phải của bảng để lọc danh sách khách mời một cách nhanh chóng.
--   **Sắp xếp:** Sử dụng menu dropdown bên cạnh ô tìm kiếm để sắp xếp danh sách theo các tiêu chí như ID, Tên, Email theo thứ tự tăng dần hoặc giảm dần.
+### Thêm Mới
 
-#### 3.3. Phân trang
+```
+1. Click "Thêm mới"
+2. Điền form:
+   - Email* (required)
+   - Họ tên* (required)
+   - SĐT, Chức vụ
+   - Giới tính, Trạng thái
+   - Loại khách (VIP)
+3. Upload avatar (optional)
+4. Click "Thêm khách mời"
+5. System: Tạo person → Upload avatar
+6. Toast success → Reload list
+```
 
-Sử dụng các nút **"Previous"** và **"Next"** ở cuối bảng để di chuyển giữa các trang. Thông tin về trang hiện tại và tổng số trang cũng được hiển thị ở giữa.
+### Chỉnh Sửa
 
-#### 3.4. Thêm mới khách mời
+```
+1. Click icon "Edit" hoặc tên khách
+2. Modal hiện thông tin hiện tại
+3. Chỉnh sửa:
+   - Thay đổi avatar (click icon pencil)
+   - Update thông tin
+4. Click "Lưu"
+5. System: Upload avatar → Update person
+6. Toast success → Reload
+```
 
-1.  Nhấn nút **"Thêm mới"** ở góc trên bên phải.
-2.  Một modal form sẽ hiện ra để nhập thông tin khách mời mới.
-3.  Điền đầy đủ thông tin bắt buộc:
-    -   **Email** (bắt buộc)
-    -   **Họ và tên** (bắt buộc)
-    -   **Số điện thoại**
-    -   **Chức vụ**
-    -   **Giới tính** (Nam/Nữ/Khác)
-    -   **Trạng thái** (Hoạt động/Không hoạt động)
-    -   **Loại khách** (Siêu VIP/VIP/Thường)
-    -   **Ảnh đại diện** (tùy chọn)
-4.  **Upload ảnh đại diện** (nếu có):
-    -   Nhấn nút **"Chọn ảnh"** để chọn file ảnh từ máy tính
-    -   Hệ thống sẽ hiển thị preview ảnh đã chọn
-    -   Ảnh sẽ được upload tự động sau khi tạo khách mời thành công
-5.  Nhấn **"Thêm khách mời"** để hoàn tất.
-    -   Hệ thống sẽ tạo khách mời trước, sau đó tự động upload ảnh đại diện (nếu có)
-    -   Thông báo thành công sẽ hiện ra khi hoàn tất
+### Import CSV
 
-#### 3.5. Import khách mời từ file Excel
+```
+1. Click "Import"
+2. Chọn file .xlsx/.xls
+3. System validate format
+4. Batch create
+5. Toast kết quả
+```
 
-Chức năng này cho phép thêm hàng loạt khách mời vào hệ thống từ một file Excel.
+---
 
-1.  Nhấn nút **"Import"**.
-2.  Một cửa sổ chọn file sẽ hiện ra.
-3.  Chọn file Excel (`.xlsx` hoặc `.xls`) chứa danh sách khách mời cần import.
-    -   *Lưu ý: File cần tuân thủ theo định dạng mẫu của hệ thống.*
-4.  Hệ thống sẽ tự động xử lý file và thêm khách mời vào danh sách.
-5.  Một thông báo sẽ xuất hiện để xác nhận việc import thành công hoặc báo lỗi nếu có.
+## 💾 Xử Lý Avatar
 
-#### 3.6. Xem chi tiết khách mời
+### Khi Thêm Mới
+```
+1. User chọn ảnh
+2. Tạo person (personId = null)
+3. API trả về personId mới
+4. Upload ảnh với personId
+5. Success
+```
 
-Để xem thông tin đầy đủ của một khách mời, nhấn vào tên của họ trong bảng danh sách.
--   Trang chi tiết sẽ hiển thị tất cả thông tin cá nhân, thông tin vé, các sản phẩm đã mua và lịch sử hệ thống (ngày tạo, ngày cập nhật).
+### Khi Chỉnh Sửa
+```
+1. User chọn ảnh mới
+2. Upload ảnh trước (với personId)
+3. Update thông tin person
+4. Success
+```
 
-#### 3.7. Chỉnh sửa thông tin khách mời
+### Note
+- Upload qua `/valid-upload-face`
+- Param: `acsDevIndexCode=90`
+- Fallback nếu upload failed
 
-1.  Từ **trang danh sách**, nhấn vào biểu tượng cây bút (`Edit`) ở cột "Thao tác" của khách mời bạn muốn sửa.
-2.  Hoặc từ **trang chi tiết**, nhấn nút **"Chỉnh sửa"**.
-3.  Giao diện sẽ chuyển sang chế độ chỉnh sửa, các trường thông tin sẽ trở thành các ô nhập liệu.
-4.  **Thay đổi ảnh đại diện** (nếu cần):
-    -   Nhấn vào biểu tượng cây bút nhỏ trên ảnh đại diện
-    -   Chọn file ảnh mới từ máy tính
-    -   Hệ thống sẽ hiển thị thông báo về ảnh đã chọn
-    -   Ảnh sẽ được upload trước khi cập nhật thông tin khách mời
-5.  Thay đổi thông tin cần thiết khác.
-6.  Nhấn nút **"Lưu"** để xác nhận thay đổi hoặc **"Hủy"** để quay lại chế độ xem.
-    -   Hệ thống sẽ upload ảnh trước (nếu có), sau đó cập nhật thông tin khách mời
-    -   Thông báo thành công sẽ hiện ra khi hoàn tất
+---
 
-#### 3.8. Xóa khách mời
+## 📊 Dữ Liệu
 
-1.  Từ **trang danh sách**, nhấn vào biểu tượng thùng rác (`Delete`) ở cột "Thao tác" của khách mời bạn muốn xóa.
-2.  Hoặc từ **trang chi tiết**, nhấn nút **"Xóa"**.
-3.  Một hộp thoại xác nhận sẽ hiện ra.
-4.  Nhấn **"Xóa"** để xác nhận vĩnh viễn xóa khách mời khỏi hệ thống, hoặc **"Hủy"** để đóng hộp thoại.
-    -   **Cảnh báo:** Thao tác này không thể hoàn tác.
+### Person Interface
+```typescript
+interface Person {
+  personId: string
+  fullName: string
+  email: string
+  phone: string
+  position: string
+  avatarUrl?: string
+  status: boolean
+  isVip: "SUPER_VIP" | "VIP" | "NORMAL"
+  gender: "MALE" | "FEMALE" | "OTHER"
+  seatInfo?: SeatInfo
+  items?: Item[]
+}
+```
 
-#### 3.9. Luồng xử lý ảnh đại diện
+---
 
-Hệ thống có hai luồng xử lý ảnh đại diện khác nhau tùy thuộc vào chức năng:
+## 🔧 Troubleshooting
 
-**A. Khi thêm mới khách mời:**
-1.  Người dùng chọn ảnh trong form thêm mới
-2.  Hệ thống tạo khách mời trước (với `personId = null`)
-3.  API trả về `personId` mới được tạo
-4.  Hệ thống tự động upload ảnh sử dụng `personId` vừa tạo
-5.  Hiển thị thông báo thành công
+### Avatar Không Upload
+```
+Check:
+1. File đúng format? (jpg, png)
+2. Size < 5MB?
+3. personId có hợp lệ?
+4. API endpoint đúng?
+```
 
-**B. Khi chỉnh sửa khách mời:**
-1.  Người dùng chọn ảnh mới trong chế độ chỉnh sửa
-2.  Hệ thống upload ảnh trước (sử dụng `personId` hiện có)
-3.  Sau khi upload thành công, hệ thống cập nhật thông tin khách mời
-4.  Hiển thị thông báo thành công
+### Import Failed
+```
+Check:
+1. File đúng template?
+2. Required fields đầy đủ?
+3. Email không trùng?
+```
 
-**Lưu ý:**
--   Ảnh được upload qua API `valid-upload-face` với tham số `acsDevIndexCode=90`
--   Nếu upload ảnh thất bại nhưng tạo/cập nhật khách mời thành công, hệ thống sẽ hiển thị cảnh báo
--   Người dùng có thể cập nhật ảnh sau bằng chức năng chỉnh sửa
+### Không Thấy Danh Sách
+```
+F12 → Network:
+1. API call success?
+2. Response có data?
+3. Pagination đúng?
+```
+
+---
+
+## 📝 API Endpoints
+
+### GET /core/persons/paginated
+```
+Params: page, size, sortBy, sortDir
+Response: { content, totalElements, ... }
+```
+
+### POST /core/persons
+```
+Body: { email, fullName, ... }
+Response: { personId, ... }
+```
+
+### POST /core/persons/valid-upload-face
+```
+Params: personId, acsDevIndexCode=90
+Body: FormData (faceImage)
+```
+
+### DELETE /core/persons/:id
+```
+Response: 200 OK
+```
+
+---
+
+## ✅ Best Practices
+
+1. **Luôn validate** trước khi submit
+2. **Upload ảnh** sau khi có personId
+3. **Reload list** sau mọi thay đổi
+4. **Xác nhận** trước khi xóa
+5. **Handle errors** gracefully
+
+---
+
+<div align="center">
+  📚 <a href="./DASHBOARD_GUIDE.md">← Dashboard</a> | <a href="../README.md">Trang Chủ</a> | <a href="./SEAT_MANAGEMENT_GUIDE.md">Quản Lý Ghế →</a>
+</div>

@@ -13,6 +13,8 @@ import { CustomerList } from "@/components/customer-list"
 import { SeatMapInteractive } from "@/components/seat-map-interactive"
 import { FoodComboModal } from "@/components/food-combo-modal"
 import { SuccessModal } from "@/components/success-modal"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PageContainer } from "@/components/page-container"
 
 import { useToast } from "@/hooks/use-toast";
 import { ISeat } from "@/types/seat.type"
@@ -28,17 +30,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { User, Info, Plane, Utensils, Minus, Plus, RefreshCw } from "lucide-react"
 import {
   getPersonsPaginated,
   validateAndUploadFace,
   registerOrUpdatePerson,
   GetPersonsParams,
+  addPerson,
 } from "@/services/person.service"
 import {
   PaginatedApiResponse,
   Person,
   RegistrationPayload,
+  AddPersonPayload,
 } from "@/types/person.type"
 
 interface FoodCombo {
@@ -94,6 +99,22 @@ export default function DangKyHoPage() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+
+  // States for quick add customer modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [newPersonData, setNewPersonData] = useState<AddPersonPayload>({
+    email: "",
+    fullName: "",
+    phone: "",
+    position: "",
+    avatarUrl: "",
+    status: "TRUE",
+    isVip: "NORMAL",
+    gender: "MALE",
+  })
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [isSubmittingNewPerson, setIsSubmittingNewPerson] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   // Remove hardcoded combos
   
@@ -221,14 +242,28 @@ export default function DangKyHoPage() {
     return total;
   }, [selectedItems, items]);
 
+  /**
+   * Lọc danh sách khách hàng theo từ khóa và loại bỏ người đã đăng ký ghế
+   * @param list - Danh sách khách hàng gốc
+   * @param keyword - Từ khóa tìm kiếm
+   * @returns Danh sách đã được lọc
+   */
   const filterPersons = (list: Person[], keyword: string) => {
     const kw = keyword.trim().toLowerCase()
-    if (!kw) return list
-    return list.filter(p =>
-      p.fullName.toLowerCase().includes(kw) ||
-      p.email.toLowerCase().includes(kw) ||
-      p.position.toLowerCase().includes(kw)
-    )
+    
+    // Lọc bỏ những người đã đăng ký ghế
+    let filtered = list.filter(p => !p.seatInfo || !p.seatInfo.seatNumber)
+    
+    // Nếu có từ khóa, tiếp tục lọc theo tên, email, chức vụ
+    if (kw) {
+      filtered = filtered.filter(p =>
+        p.fullName.toLowerCase().includes(kw) ||
+        p.email.toLowerCase().includes(kw) ||
+        p.position.toLowerCase().includes(kw)
+      )
+    }
+    
+    return filtered
   }
 
   // Recompute client-side pagination when search term or page/size changes
@@ -281,21 +316,33 @@ export default function DangKyHoPage() {
         toast({ title: "Không tìm thấy thông tin khách hàng", variant: "destructive" })
         return
       }
+      
+      // Kiểm tra xem khách hàng đã có ảnh nhận diện chưa
       const hasExistingImage = Boolean(selectedCustomer.avatarUrl)
-      if (!faceIdImage && !hasExistingImage) {
-        toast({ title: "Vui lòng tải lên ảnh Face ID", variant: "destructive" })
+      const hasNewImage = Boolean(faceIdImage)
+      
+      // Bắt buộc phải có ảnh (cũ hoặc mới) mới được next
+      if (!hasExistingImage && !hasNewImage) {
+        setError({ 
+          title: "Chưa có ảnh nhận diện", 
+          message: "Khách hàng chưa có ảnh nhận diện. Vui lòng tải lên ảnh Face ID để tiếp tục." 
+        })
         return
       }
 
       setIsUploadingFace(true);
       try {
-        if (faceIdImage) {
-          const response = await validateAndUploadFace(selectedCustomer.personId, faceIdImage);
+        // Nếu có ảnh mới thì upload
+        if (hasNewImage) {
+          const response = await validateAndUploadFace(selectedCustomer.personId, faceIdImage!);
           if (response.code !== 200) {
             setError({ title: "Xác thực khuôn mặt thất bại", message: response.message })
             return // Stop moving to next step
           }
           toast({ title: "Xác thực khuôn mặt thành công" })
+        } else if (hasExistingImage) {
+          // Nếu đã có ảnh cũ, chỉ cần thông báo
+          toast({ title: "Khách hàng đã có ảnh nhận diện" })
         }
       } catch (error) {
         setError({ title: "Lỗi", message: "Có lỗi xảy ra khi tải ảnh lên." })
@@ -441,34 +488,116 @@ export default function DangKyHoPage() {
     fileInputRef.current?.click()
   }
 
+  // Handle avatar change for quick add modal
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setAvatarFile(file)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setNewPersonData(prev => ({ ...prev, avatarUrl: e.target?.result as string }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Handle quick add new person
+  const handleQuickAddSubmit = async () => {
+    if (!newPersonData.fullName || !newPersonData.email) {
+      toast({
+        title: "Vui lòng điền các trường bắt buộc (Họ tên, Email).",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmittingNewPerson(true)
+    try {
+      const createResponse = await addPerson(newPersonData)
+      
+      if (avatarFile && createResponse?.data?.personId) {
+        try {
+          await validateAndUploadFace(createResponse.data.personId, avatarFile)
+          toast({
+            title: "Đã thêm khách mời mới và upload avatar thành công.",
+          })
+        } catch (avatarError) {
+          toast({
+            title: "Đã thêm khách mời mới nhưng upload avatar thất bại.",
+            variant: "destructive",
+          })
+        }
+      } else {
+        toast({
+          title: "Đã thêm khách mời mới.",
+        })
+      }
+      
+      // Reset form and close modal
+      setNewPersonData({
+        email: "",
+        fullName: "",
+        phone: "",
+        position: "",
+        avatarUrl: "",
+        status: "TRUE",
+        isVip: "NORMAL",
+        gender: "MALE",
+      })
+      setAvatarFile(null)
+      setIsAddModalOpen(false)
+      
+      // Reload the persons list
+      await fetchPersonsFull()
+    } catch (error) {
+      toast({
+        title: "Không thể thêm khách mời mới. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmittingNewPerson(false)
+    }
+  }
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <CustomerList
-            data={personsResponse}
-            isLoading={isLoading}
-            onSelect={setSelectedCustomer}
-            selectedCustomer={selectedCustomer}
-            onPageChange={(page) => {
-              const base = filterPersons(allPersons, searchTermFull)
-              setClientPage(page)
-              const sliced = base.slice(page * clientSize, page * clientSize + clientSize)
-              setPersonsResponse({
-                content: sliced,
-                page,
-                size: clientSize,
-                totalElements: base.length,
-                totalPages: Math.max(1, Math.ceil(base.length / clientSize)),
-                first: page === 0,
-                last: page >= Math.max(1, Math.ceil(base.length / clientSize)) - 1,
-              })
-            }}
-            onSearch={(keyword) => {
-              setSearchTermFull(keyword)
-              setClientPage(0)
-            }}
-          />
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button 
+                onClick={() => setIsAddModalOpen(true)}
+                className="bg-orange-500 hover:bg-orange-600"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm khách mới
+              </Button>
+            </div>
+            <CustomerList
+              data={personsResponse}
+              isLoading={isLoading}
+              onSelect={setSelectedCustomer}
+              selectedCustomer={selectedCustomer}
+              onPageChange={(page) => {
+                const base = filterPersons(allPersons, searchTermFull)
+                setClientPage(page)
+                const sliced = base.slice(page * clientSize, page * clientSize + clientSize)
+                setPersonsResponse({
+                  content: sliced,
+                  page,
+                  size: clientSize,
+                  totalElements: base.length,
+                  totalPages: Math.max(1, Math.ceil(base.length / clientSize)),
+                  first: page === 0,
+                  last: page >= Math.max(1, Math.ceil(base.length / clientSize)) - 1,
+                })
+              }}
+              onSearch={(keyword) => {
+                setSearchTermFull(keyword)
+                setClientPage(0)
+              }}
+            />
+          </div>
         )
       case 2:
         return (
@@ -620,18 +749,30 @@ export default function DangKyHoPage() {
     }
   }
 
+  /**
+   * Kiểm tra xem nút Tiếp tục có bị disable hay không
+   * @returns true nếu nút bị disable, false nếu có thể click
+   */
   const isNextButtonDisabled = () => {
+    // Bước 1: Phải chọn khách hàng
     if (currentStep === 1 && !selectedCustomer) return true;
+    
+    // Bước 2: Phải đồng ý điều khoản VÀ phải có ảnh đại diện
     if (currentStep === 2) {
       const hasAnyImage = Boolean(faceIdImage) || Boolean(selectedCustomer?.avatarUrl)
+      // Phải có cả checkbox đồng ý VÀ ảnh đại diện mới được tiếp tục
       if (!hasAgreed || !hasAnyImage) return true
     }
+    
+    // Bước 3: Phải chọn ghế
     if (currentStep === 3 && !selectedSeat) return true;
+    
+    // Disable khi đang upload face
     return isUploadingFace;
   }
 
   return (
-    <div className="p-8">
+    <PageContainer className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Đăng ký hộ</h1>
         <p className="text-gray-600 mt-2">Đăng ký hộ khách tại sự kiện</p>
@@ -677,6 +818,155 @@ export default function DangKyHoPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+
+      {/* Quick Add Customer Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Thêm khách mời mới</DialogTitle>
+          </DialogHeader>
+
+          <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+
+          <div className="grid grid-cols-2 gap-4 py-4">
+            {/* Email */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email*</label>
+              <Input
+                type="email"
+                value={newPersonData.email}
+                onChange={(e) => setNewPersonData({ ...newPersonData, email: e.target.value })}
+                placeholder="Nhập email"
+              />
+            </div>
+
+            {/* Full Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Họ và tên*</label>
+              <Input
+                value={newPersonData.fullName}
+                onChange={(e) => setNewPersonData({ ...newPersonData, fullName: e.target.value })}
+                placeholder="Nhập họ và tên"
+              />
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Số điện thoại</label>
+              <Input
+                value={newPersonData.phone}
+                onChange={(e) => setNewPersonData({ ...newPersonData, phone: e.target.value })}
+                placeholder="Nhập số điện thoại"
+              />
+            </div>
+
+            {/* Position */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Chức vụ</label>
+              <Input
+                value={newPersonData.position}
+                onChange={(e) => setNewPersonData({ ...newPersonData, position: e.target.value })}
+                placeholder="Nhập chức vụ"
+              />
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Giới tính</label>
+              <Select
+                value={newPersonData.gender}
+                onValueChange={(value: "MALE" | "FEMALE" | "OTHER") =>
+                  setNewPersonData({ ...newPersonData, gender: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn giới tính" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MALE">Nam</SelectItem>
+                  <SelectItem value="FEMALE">Nữ</SelectItem>
+                  <SelectItem value="OTHER">Khác</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Trạng thái</label>
+              <Select
+                value={newPersonData.status}
+                onValueChange={(value: "TRUE" | "FALSE") => setNewPersonData({ ...newPersonData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TRUE">Hoạt động</SelectItem>
+                  <SelectItem value="FALSE">Không hoạt động</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* VIP */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Loại khách</label>
+              <Select
+                value={newPersonData.isVip}
+                onValueChange={(value: "SUPER_VIP" | "VIP" | "NORMAL") => setNewPersonData({ ...newPersonData, isVip: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn loại khách" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SUPER_VIP">Siêu VIP</SelectItem>
+                  <SelectItem value="VIP">VIP</SelectItem>
+                  <SelectItem value="NORMAL">Thường</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Avatar Upload */}
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium">Ảnh đại diện</label>
+              <div className="flex items-center space-x-4">
+                {newPersonData.avatarUrl && (
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300">
+                    <img
+                      src={newPersonData.avatarUrl}
+                      alt="Avatar preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  {avatarFile ? "Thay đổi ảnh" : "Chọn ảnh"}
+                </Button>
+                {avatarFile && (
+                  <span className="text-sm text-gray-500">{avatarFile.name}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)} disabled={isSubmittingNewPerson}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={handleQuickAddSubmit} 
+              className="bg-orange-500 hover:bg-orange-600"
+              disabled={isSubmittingNewPerson}
+            >
+              {isSubmittingNewPerson ? "Đang xử lý..." : "Thêm khách mời"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </PageContainer>
   )
 }

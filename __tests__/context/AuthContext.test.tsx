@@ -1,17 +1,32 @@
 /**
  * @fileoverview Unit tests cho AuthContext và useAuth hook.
- * Sử dụng React Testing Library `renderHook` để test logic của hook một cách độc lập.
+ * @description Sử dụng React Testing Library `renderHook` để test logic của hook một cách độc lập.
+ * Test xác thực authentication flow sử dụng cookies thay vì localStorage.
+ * @version 2.0.0
+ * @since 2025-10-03
+ * @author Dũng Đàm
  */
 import "@testing-library/jest-dom"
 import { renderHook, act } from "@testing-library/react"
 import { AuthProvider, useAuth } from "@/context/AuthContext"
+import * as cookieUtils from "@/lib/cookies"
 
 // Mock Next.js router
 const mockRouterPush = jest.fn()
+const mockRouterReplace = jest.fn()
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockRouterPush,
+    replace: mockRouterReplace,
   }),
+}))
+
+// Mock cookie utilities
+jest.mock("@/lib/cookies", () => ({
+  setCookie: jest.fn(),
+  getCookie: jest.fn(),
+  deleteCookie: jest.fn(),
+  hasCookie: jest.fn(),
 }))
 
 // Wrapper component để cung cấp Provider cho hook
@@ -19,24 +34,35 @@ const wrapper = ({ children }: { children: React.ReactNode }) => <AuthProvider>{
 
 describe("useAuth Hook & AuthContext", () => {
 
-  // Dọn dẹp localStorage và mocks sau mỗi test
+  /**
+   * Dọn dẹp mocks sau mỗi test
+   */
   afterEach(() => {
-    localStorage.clear()
     jest.clearAllMocks()
   })
 
-  it("trạng thái ban đầu phải là chưa xác thực và đang tải", () => {
+  /**
+   * @test Trạng thái khởi tạo
+   * @description Kiểm tra trạng thái ban đầu khi không có cookie
+   */
+  it("trạng thái ban đầu phải là chưa xác thực khi không có cookie", () => {
+    // Arrange: Mock getCookie trả về null
+    ;(cookieUtils.getCookie as jest.Mock).mockReturnValue(null)
+
     // Act: Render hook
     const { result } = renderHook(() => useAuth(), { wrapper })
 
     // Assert: Kiểm tra trạng thái ban đầu
     expect(result.current.isAuthenticated).toBe(false)
     expect(result.current.user).toBeNull()
-    // Ban đầu isLoading là true, sau đó useEffect chạy và set về false
     expect(result.current.isLoading).toBe(false)
   })
 
-  it("hàm login phải lưu thông tin vào localStorage và cập nhật state", () => {
+  /**
+   * @test Chức năng login
+   * @description Kiểm tra hàm login lưu thông tin vào cookies và cập nhật state
+   */
+  it("hàm login phải lưu thông tin vào cookies và cập nhật state", () => {
     // Arrange
     const { result } = renderHook(() => useAuth(), { wrapper })
     const loginData = {
@@ -51,14 +77,19 @@ describe("useAuth Hook & AuthContext", () => {
       result.current.login(loginData)
     })
 
-    // Assert: Kiểm tra state và localStorage
+    // Assert: Kiểm tra state và cookies
     expect(result.current.isAuthenticated).toBe(true)
     expect(result.current.user).toEqual({ username: "testuser", role: "USER" })
-    expect(localStorage.getItem("accessToken")).toBe(loginData.accessToken)
-    expect(localStorage.getItem("user")).toBe(JSON.stringify({ username: "testuser", role: "USER" }))
+    expect(cookieUtils.setCookie).toHaveBeenCalledWith("accessToken", loginData.accessToken, 7)
+    expect(cookieUtils.setCookie).toHaveBeenCalledWith("refreshToken", loginData.refreshToken, 7)
+    expect(cookieUtils.setCookie).toHaveBeenCalledWith("user", JSON.stringify({ username: "testuser", role: "USER" }), 7)
   })
   
-  it("hàm logout phải dọn dẹp localStorage, reset state và điều hướng", () => {
+  /**
+   * @test Chức năng logout
+   * @description Kiểm tra hàm logout xóa cookies, reset state và điều hướng về login
+   */
+  it("hàm logout phải dọn dẹp cookies, reset state và điều hướng", () => {
     // Arrange: Giả lập trạng thái đã đăng nhập
     const loginData = {
       accessToken: "test-access-token",
@@ -66,8 +97,14 @@ describe("useAuth Hook & AuthContext", () => {
       username: "testuser",
       role: "USER",
     }
-    localStorage.setItem("accessToken", loginData.accessToken)
-    localStorage.setItem("user", JSON.stringify({ username: loginData.username, role: loginData.role }))
+    
+    // Mock getCookie để trả về dữ liệu đăng nhập
+    ;(cookieUtils.getCookie as jest.Mock).mockImplementation((name: string) => {
+      if (name === "accessToken") return loginData.accessToken
+      if (name === "refreshToken") return loginData.refreshToken
+      if (name === "user") return JSON.stringify({ username: loginData.username, role: loginData.role })
+      return null
+    })
     
     const { result } = renderHook(() => useAuth(), { wrapper })
 
@@ -79,27 +116,36 @@ describe("useAuth Hook & AuthContext", () => {
       result.current.logout()
     })
 
-    // Assert: Kiểm tra state, localStorage và router
+    // Assert: Kiểm tra state, cookies và router
     expect(result.current.isAuthenticated).toBe(false)
     expect(result.current.user).toBeNull()
-    expect(localStorage.getItem("accessToken")).toBeNull()
-    expect(localStorage.getItem("user")).toBeNull()
+    expect(cookieUtils.deleteCookie).toHaveBeenCalledWith("accessToken")
+    expect(cookieUtils.deleteCookie).toHaveBeenCalledWith("refreshToken")
+    expect(cookieUtils.deleteCookie).toHaveBeenCalledWith("user")
     expect(mockRouterPush).toHaveBeenCalledWith("/login")
   })
 
-  it("phải đọc thông tin người dùng từ localStorage khi khởi tạo", () => {
-    // Arrange: Giả lập trạng thái đã đăng nhập trong localStorage
-     const loginData = {
+  /**
+   * @test Persistence với cookies
+   * @description Kiểm tra việc đọc thông tin người dùng từ cookies khi khởi tạo
+   */
+  it("phải đọc thông tin người dùng từ cookies khi khởi tạo", () => {
+    // Arrange: Giả lập trạng thái đã đăng nhập trong cookies
+    const loginData = {
       accessToken: "test-access-token",
       user: { username: "storedUser", role: "ADMIN" }
     }
-    localStorage.setItem("accessToken", loginData.accessToken)
-    localStorage.setItem("user", JSON.stringify(loginData.user))
+    
+    ;(cookieUtils.getCookie as jest.Mock).mockImplementation((name: string) => {
+      if (name === "accessToken") return loginData.accessToken
+      if (name === "user") return JSON.stringify(loginData.user)
+      return null
+    })
 
     // Act: Render hook
     const { result } = renderHook(() => useAuth(), { wrapper })
 
-    // Assert: Kiểm tra state đã được cập nhật từ localStorage
+    // Assert: Kiểm tra state đã được cập nhật từ cookies
     expect(result.current.isAuthenticated).toBe(true)
     expect(result.current.user).toEqual(loginData.user)
   })

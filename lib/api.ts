@@ -1,4 +1,5 @@
 import axios from "axios"
+import { getCookie } from "./cookies"
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -11,7 +12,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("accessToken")
+      const token = getCookie("accessToken")
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }

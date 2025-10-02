@@ -5,6 +5,7 @@ import { Search, Filter, Download, Plus, Trash2, Edit, ChevronDown, Upload, Pape
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { PageContainer } from "@/components/page-container"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -203,7 +204,7 @@ export default function QuanLyDoAnPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <PageContainer>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -264,24 +265,27 @@ export default function QuanLyDoAnPage() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="w-full">
+          <table className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  STT
+                </th>
+                <th className="w-3/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tên món
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
+                <th className="w-3/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Chi tiết
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày tạo
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày sửa
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thao tác
                 </th>
               </tr>
@@ -308,18 +312,18 @@ export default function QuanLyDoAnPage() {
               ) : (
                 items.map((mon, index) => (
                   <tr key={mon.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <span className="mr-4 text-sm text-gray-500">{pagination.page * itemsPerPage + index + 1}</span>
-                        <span className="text-sm font-medium text-gray-900">{mon.itemName}</span>
-                      </div>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {pagination.page * itemsPerPage + index + 1}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatPrice(mon.price)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
-                      <div className="truncate">{mon.description || "Không có mô tả"}</div>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-gray-900 break-words">{mon.itemName}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(mon.createdAt)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(mon.updatedAt)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{formatPrice(mon.price)}</td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm text-gray-900 break-words">{mon.description || "Không có mô tả"}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900 break-words">{formatDate(mon.createdAt)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 break-words">{formatDate(mon.updatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
                         <Button
@@ -349,36 +353,43 @@ export default function QuanLyDoAnPage() {
 
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={pagination.first}
-          >
-            ← Previous
-          </Button>
-          <div className="flex items-center space-x-2">
-            {/* TODO: Cập nhật logic phân trang phức tạp hơn nếu cần */}
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                variant="outline"
-                size="sm"
-                className={currentPage === page ? "bg-orange-500 text-white" : ""}
-                onClick={() => goToPage(page)}
-              >
-                {page}
-              </Button>
-            ))}
+          <div className="text-sm text-gray-700">
+            Hiển thị {pagination.page * itemsPerPage + 1} đến {Math.min((pagination.page + 1) * itemsPerPage, pagination.totalElements)} trong tổng số {pagination.totalElements} món
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={pagination.last}
-          >
-            Next →
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={pagination.first}>
+              ← Trước
+            </Button>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(page)}
+                  className={currentPage === page ? "bg-orange-500 text-white" : ""}
+                >
+                  {page}
+                </Button>
+              ))}
+              {pagination.totalPages > 5 && (
+                <>
+                  <span className="text-sm text-gray-500">...</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(pagination.totalPages)}
+                    className={currentPage === pagination.totalPages ? "bg-orange-500 text-white" : ""}
+                  >
+                    {pagination.totalPages}
+                  </Button>
+                </>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={pagination.last}>
+              Sau →
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -498,6 +509,6 @@ export default function QuanLyDoAnPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }
