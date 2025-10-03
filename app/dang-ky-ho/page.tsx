@@ -391,7 +391,7 @@ export default function DangKyHoPage() {
         position: selectedCustomer.position,
         phone: selectedCustomer.phone,
         gender: selectedCustomer.gender,
-        status: selectedCustomer.status,
+        status: true, // Khi đăng ký thành công thì status phải là true
         isVip: selectedCustomer.isVip,
         seatInfo: mergedSeatInfo,
         items: itemsPayload,
@@ -407,7 +407,10 @@ export default function DangKyHoPage() {
         if (!safePayload.seatInfo) delete (safePayload as any).seatInfo
         if (!safePayload.items?.length) delete (safePayload as any).items
 
+        console.log('Registration payload:', JSON.stringify(safePayload, null, 2));
+
         const response = await registerOrUpdatePerson(safePayload as any);
+        console.log('Registration response:', response);
         if (response.code === 200) {
           setShowSuccessModal(true);
           // Refresh trang sau 2 giây
