@@ -59,6 +59,37 @@ export const getPersonsPaginated = async (
 };
 
 /**
+ * @function getPersonsSuperAdminCreated
+ * @description Lấy danh sách khách hàng được tạo bởi SUPERADMIN có phân trang từ API.
+ * @param {GetPersonsParams} params - Các tham số phân trang và sắp xếp.
+ * @returns {Promise<PaginatedApiResponse<Person>>} Một promise giải quyết với dữ liệu khách hàng đã được phân trang.
+ */
+export const getPersonsSuperAdminCreated = async (
+  params: GetPersonsParams = {},
+): Promise<PaginatedApiResponse<Person>> => {
+  // Gán giá trị mặc định
+  const { page = 0, size = 10, sortBy = "personId", sortDir = "asc" } = params;
+
+  try {
+    const response = await api.get<StreamApiResponse<PaginatedApiResponse<Person>>>(
+      "/core/persons/superadmin-created",
+      {
+        params: {
+          page,
+          size,
+          sortBy,
+          sortDir,
+        },
+      },
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error("Không thể lấy danh sách khách hàng superadmin:", error);
+    throw error;
+  }
+};
+
+/**
  * @function getPersonByEmail
  * @description Lấy thông tin chi tiết của một khách hàng bằng Email.
  * @param {string} email - Email của khách hàng.

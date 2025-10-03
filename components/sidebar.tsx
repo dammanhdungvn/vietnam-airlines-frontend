@@ -1,8 +1,8 @@
-"use client"
+"use client";
 import logoImage from "../public/image/logo.jpg";
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Users,
@@ -15,9 +15,15 @@ import {
   ChevronRight,
   User,
   LogOut,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,8 +34,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { useAuth } from "@/context/AuthContext"
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/context/AuthContext";
 
 /**
  * Component Sidebar - Thanh điều hướng chính của ứng dụng
@@ -38,17 +44,33 @@ import { useAuth } from "@/context/AuthContext"
  * 2. Administrator (submenu)
  * 3. Đăng ký hộ
  */
-export function Sidebar({ className = "", onNavigate }: { className?: string; onNavigate?: () => void }) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const [isAdminExpanded, setIsAdminExpanded] = useState(true)
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
-  const { user, logout } = useAuth()
+export function Sidebar({
+  className = "",
+  onNavigate,
+}: {
+  className?: string;
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isAdminExpanded, setIsAdminExpanded] = useState(true);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const { user, logout } = useAuth();
+
+  // Xác định href cho "Quản lý khách mời" dựa trên role
+  const guestManagementHref =
+    user?.role === "SUPERADMIN"
+      ? "/quan-ly-khach-moi-local"
+      : "/quan-ly-khach-moi";
+
+  // Xác định href cho "Đăng ký hộ" dựa trên role
+  const registrationHref =
+    user?.role === "SUPERADMIN" ? "/dang-ky-ho-local" : "/dang-ky-ho";
 
   const adminMenuItems = [
     {
       title: "Quản lý khách mời",
-      href: "/quan-ly-khach-moi",
+      href: guestManagementHref,
       icon: Users,
     },
     // {
@@ -71,20 +93,24 @@ export function Sidebar({ className = "", onNavigate }: { className?: string; on
       href: "/quan-ly-link-truc-tuyen",
       icon: LinkIcon,
     },
-  ]
+  ];
 
   const handleLogout = () => {
-    router.push("/login")
-  }
+    router.push("/login");
+  };
 
   return (
-    <aside className={cn("fixed top-0 left-0 h-full w-64 bg-white border-r shadow-sm z-50", className)}>
+    <aside
+      className={cn(
+        "fixed top-0 left-0 h-full w-64 bg-white border-r shadow-sm z-50",
+        className
+      )}
+    >
       {/* Logo Vietnam Airlines */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-
           <div>
-          <div className="w-50">
+            <div className="w-50">
               <img src={logoImage.src} alt="logo" />
             </div>
           </div>
@@ -101,7 +127,7 @@ export function Sidebar({ className = "", onNavigate }: { className?: string; on
               "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
               pathname === "/dashboard"
                 ? "bg-orange-50 text-orange-700 border-r-2 border-orange-500"
-                : "text-gray-700 hover:bg-gray-100",
+                : "text-gray-700 hover:bg-gray-100"
             )}
             onClick={onNavigate}
           >
@@ -119,15 +145,19 @@ export function Sidebar({ className = "", onNavigate }: { className?: string; on
                 <User className="w-5 h-5" />
                 <span>Administrator</span>
               </div>
-              {isAdminExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              {isAdminExpanded ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
             </button>
 
             {/* Submenu Administrator */}
             {isAdminExpanded && (
               <div className="ml-4 mt-2 space-y-1">
                 {adminMenuItems.map((item) => {
-                  const Icon = item.icon
-                  const isActive = pathname === item.href
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
 
                   return (
                     <Link
@@ -137,14 +167,14 @@ export function Sidebar({ className = "", onNavigate }: { className?: string; on
                         "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                         isActive
                           ? "bg-orange-50 text-orange-700 border-r-2 border-orange-500"
-                          : "text-gray-700 hover:bg-gray-100",
+                          : "text-gray-700 hover:bg-gray-100"
                       )}
                       onClick={onNavigate}
                     >
                       <Icon className="w-4 h-4" />
                       <span>{item.title}</span>
                     </Link>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -152,12 +182,12 @@ export function Sidebar({ className = "", onNavigate }: { className?: string; on
 
           {/* 3. Đăng ký hộ */}
           <Link
-            href="/dang-ky-ho"
+            href={registrationHref}
             className={cn(
               "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mt-4",
-              pathname === "/dang-ky-ho"
+              pathname === registrationHref
                 ? "bg-orange-50 text-orange-700 border-r-2 border-orange-500"
-                : "text-gray-700 hover:bg-gray-100",
+                : "text-gray-700 hover:bg-gray-100"
             )}
             onClick={onNavigate}
           >
@@ -195,5 +225,5 @@ export function Sidebar({ className = "", onNavigate }: { className?: string; on
         </DropdownMenu>
       </div>
     </aside>
-  )
+  );
 }
