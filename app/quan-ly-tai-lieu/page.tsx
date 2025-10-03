@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -17,19 +17,26 @@ import {
   ChevronDown,
   Paperclip,
   Trash,
-} from "lucide-react"
-import { FileIcon, defaultStyles } from "react-file-icon"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { PageContainer } from "@/components/page-container"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+} from "lucide-react";
+import { FileIcon, defaultStyles } from "react-file-icon";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PageContainer } from "@/components/page-container";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,100 +47,102 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { toast } from "sonner"
-import { IDocument } from "@/types/document.type"
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { IDocument } from "@/types/document.type";
 import {
   getAllDocuments,
   createOrUpdateDocument,
   deleteDocument,
   getDownloadUrl,
-} from "@/services/document.service"
+} from "@/services/document.service";
 
 /**
  * Trang Quản lý tài liệu
  * Hiển thị danh sách tài liệu, cho phép thêm, sửa, xóa, xem và tải xuống.
  */
 export default function QuanLyTaiLieuPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [documents, setDocuments] = useState<IDocument[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [searchTerm, setSearchTerm] = useState("");
+  const [documents, setDocuments] = useState<IDocument[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
-  const [selectedDocument, setSelectedDocument] = useState<IDocument | null>(null)
+  const [selectedDocument, setSelectedDocument] = useState<IDocument | null>(
+    null
+  );
   const [formData, setFormData] = useState({
     documentName: "",
     author: "",
     file: null as File | null,
-  })
-  const [filePreview, setFilePreview] = useState<string | null>(null)
+  });
+  const [filePreview, setFilePreview] = useState<string | null>(null);
 
   const fetchDocuments = async () => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
     try {
-      const data = await getAllDocuments()
-      setDocuments(data)
+      const data = await getAllDocuments();
+      setDocuments(data);
     } catch (err) {
-      setError("Không thể tải danh sách tài liệu.")
-      toast.error("Không thể tải danh sách tài liệu từ máy chủ.")
+      setError("Không thể tải danh sách tài liệu.");
+      toast.error("Không thể tải danh sách tài liệu từ máy chủ.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchDocuments()
-  }, [])
+    fetchDocuments();
+  }, []);
 
   const filteredData = useMemo(() => {
     return documents.filter(
       (doc) =>
         doc.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.author.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-  }, [searchTerm, documents])
+        doc.author.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm, documents]);
 
   // Tính toán pagination
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentItems = filteredData.slice(startIndex, endIndex)
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = filteredData.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-  }
+    setCurrentPage(page);
+  };
 
   const handlePrevious = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1)
+      setCurrentPage(currentPage - 1);
     }
-  }
+  };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1)
+      setCurrentPage(currentPage + 1);
     }
-  }
+  };
 
   // Reset về trang 1 khi search
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm])
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const getFileExtension = (filePath: string): string => {
-    return filePath.split(".").pop()?.toLowerCase() || "file"
-  }
+    return filePath.split(".").pop()?.toLowerCase() || "file";
+  };
 
   const getFileIcon = (filePath: string) => {
-    const extension = getFileExtension(filePath)
-    const iconStyles = defaultStyles[extension as keyof typeof defaultStyles]
+    const extension = getFileExtension(filePath);
+    const iconStyles = defaultStyles[extension as keyof typeof defaultStyles];
 
     return (
       <div className="w-8 h-8">
@@ -143,99 +152,101 @@ export default function QuanLyTaiLieuPage() {
           <FileText className="w-full h-full text-gray-400" />
         )}
       </div>
-    )
-  }
+    );
+  };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null
-    setFormData((prev) => ({ ...prev, file }))
+    const file = e.target.files?.[0] || null;
+    setFormData((prev) => ({ ...prev, file }));
     if (file) {
-      setFilePreview(URL.createObjectURL(file))
+      setFilePreview(URL.createObjectURL(file));
     } else {
-      setFilePreview(null)
+      setFilePreview(null);
     }
-  }
+  };
 
   const resetForm = () => {
-    setFormData({ documentName: "", author: "", file: null })
-    setSelectedDocument(null)
-    setFilePreview(null)
-  }
+    setFormData({ documentName: "", author: "", file: null });
+    setSelectedDocument(null);
+    setFilePreview(null);
+  };
 
   const handleAdd = () => {
-    resetForm()
-    setIsModalOpen(true)
-  }
+    resetForm();
+    setIsModalOpen(true);
+  };
 
   const handleEdit = (document: IDocument) => {
-    setSelectedDocument(document)
+    setSelectedDocument(document);
     setFormData({
       documentName: document.documentName,
       author: document.author,
       file: null, // File không được điền sẵn, người dùng phải chọn lại nếu muốn thay đổi
-    })
-    setIsModalOpen(true)
-  }
+    });
+    setIsModalOpen(true);
+  };
 
   const handlePreview = (document: IDocument) => {
-    window.open(document.fileUrl, "_blank")
-  }
+    window.open(document.fileUrl, "_blank");
+  };
 
   const handleDownload = (id: number) => {
-    window.open(getDownloadUrl(id), "_blank")
-  }
+    window.open(getDownloadUrl(id), "_blank");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!formData.documentName || !formData.author) {
-      toast.error("Vui lòng điền đầy đủ tên tài liệu và tác giả.")
-      return
+      toast.error("Vui lòng điền đầy đủ tên tài liệu và tác giả.");
+      return;
     }
     // File là bắt buộc khi tạo mới
     if (!selectedDocument && !formData.file) {
-      toast.error("Vui lòng chọn file đính kèm.")
-      return
+      toast.error("Vui lòng chọn file đính kèm.");
+      return;
     }
 
     const payload = {
       documentName: formData.documentName,
       author: formData.author,
       ...(selectedDocument && { id: selectedDocument.id }), // Thêm ID nếu là chế độ sửa
-    }
+    };
 
     try {
-      await createOrUpdateDocument(payload, formData.file)
-      toast.success(`Đã ${selectedDocument ? "cập nhật" : "thêm"} tài liệu thành công.`)
-      setIsModalOpen(false)
-      fetchDocuments() // Tải lại danh sách
+      await createOrUpdateDocument(payload, formData.file);
+      toast.success(
+        `Đã ${selectedDocument ? "cập nhật" : "thêm"} tài liệu thành công.`
+      );
+      setIsModalOpen(false);
+      fetchDocuments(); // Tải lại danh sách
     } catch (error) {
-      toast.error("Đã có lỗi xảy ra. Vui lòng thử lại.")
+      toast.error("Đã có lỗi xảy ra. Vui lòng thử lại.");
     }
-  }
+  };
 
   const handleDeleteConfirm = async () => {
-    if (!selectedDocument) return
+    if (!selectedDocument) return;
     try {
-      await deleteDocument(selectedDocument.id)
-      toast.success(`Đã xóa tài liệu "${selectedDocument.documentName}"`)
-      fetchDocuments()
+      await deleteDocument(selectedDocument.id);
+      toast.success(`Đã xóa tài liệu "${selectedDocument.documentName}"`);
+      fetchDocuments();
     } catch (error) {
-      toast.error("Không thể xóa tài liệu. Vui lòng thử lại.")
+      toast.error("Không thể xóa tài liệu. Vui lòng thử lại.");
     } finally {
-      setIsDeleteDialogOpen(false)
-      setSelectedDocument(null)
+      setIsDeleteDialogOpen(false);
+      setSelectedDocument(null);
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return ""
-    const date = new Date(dateString)
-    return date.toLocaleDateString("vi-VN")
-  }
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN");
+  };
 
   return (
     <PageContainer>
@@ -245,11 +256,15 @@ export default function QuanLyTaiLieuPage() {
           <h1 className="text-2xl font-bold text-gray-900">Quản lý tài liệu</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+          {/* <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
             <Download className="w-4 h-4 mr-2" />
             Export
-          </Button>
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600 flex-1 sm:flex-none" onClick={handleAdd}>
+          </Button> */}
+          <Button
+            size="sm"
+            className="bg-orange-500 hover:bg-orange-600 flex-1 sm:flex-none"
+            onClick={handleAdd}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Thêm tài liệu
           </Button>
@@ -327,23 +342,31 @@ export default function QuanLyTaiLieuPage() {
                           {getFileIcon(doc.filePath)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 break-words">{doc.documentName}</p>
+                          <p className="text-sm font-medium text-gray-900 break-words">
+                            {doc.documentName}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-900 break-words">{doc.author}</p>
+                      <p className="text-sm text-gray-900 break-words">
+                        {doc.author}
+                      </p>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 break-words">{formatDate(doc.createdAt)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900 break-words">{formatDate(doc.updatedAt)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 break-words">
+                      {formatDate(doc.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900 break-words">
+                      {formatDate(doc.updatedAt)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center justify-center space-x-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setSelectedDocument(doc)
-                            setIsDeleteDialogOpen(true)
+                            setSelectedDocument(doc);
+                            setIsDeleteDialogOpen(true);
                           }}
                           className="text-red-600 hover:text-red-800 hover:bg-red-50"
                         >
@@ -386,20 +409,32 @@ export default function QuanLyTaiLieuPage() {
         {filteredData.length > 0 && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700 hidden sm:block">
-              Hiển thị {startIndex + 1} đến {Math.min(endIndex, filteredData.length)} trong tổng số {filteredData.length} tài liệu
+              Hiển thị {startIndex + 1} đến{" "}
+              {Math.min(endIndex, filteredData.length)} trong tổng số{" "}
+              {filteredData.length} tài liệu
             </div>
             <div className="flex items-center justify-center sm:justify-end w-full sm:w-auto space-x-2">
-              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentPage === 1}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevious}
+                disabled={currentPage === 1}
+              >
                 ← Trước
               </Button>
               <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
+                {Array.from(
+                  { length: Math.min(totalPages, 5) },
+                  (_, i) => i + 1
+                ).map((page) => (
                   <Button
                     key={page}
                     variant="outline"
                     size="sm"
                     onClick={() => handlePageChange(page)}
-                    className={currentPage === page ? "bg-orange-500 text-white" : ""}
+                    className={
+                      currentPage === page ? "bg-orange-500 text-white" : ""
+                    }
                   >
                     {page}
                   </Button>
@@ -411,14 +446,23 @@ export default function QuanLyTaiLieuPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(totalPages)}
-                      className={currentPage === totalPages ? "bg-orange-500 text-white" : ""}
+                      className={
+                        currentPage === totalPages
+                          ? "bg-orange-500 text-white"
+                          : ""
+                      }
                     >
                       {totalPages}
                     </Button>
                   </>
                 )}
               </div>
-              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentPage === totalPages}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNext}
+                disabled={currentPage === totalPages}
+              >
                 Sau →
               </Button>
             </div>
@@ -440,18 +484,26 @@ export default function QuanLyTaiLieuPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="documentName" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="documentName"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Tên tài liệu <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="documentName"
                   value={formData.documentName}
-                  onChange={(e) => handleInputChange("documentName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("documentName", e.target.value)
+                  }
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="author" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="author"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Tên tác giả <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -462,7 +514,10 @@ export default function QuanLyTaiLieuPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="file" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="file"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Tài liệu đính kèm{" "}
                   {!selectedDocument && <span className="text-red-500">*</span>}
                 </Label>
@@ -475,18 +530,28 @@ export default function QuanLyTaiLieuPage() {
                         className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
                       >
                         <span>Upload a file</span>
-                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} />
+                        <input
+                          id="file-upload"
+                          name="file-upload"
+                          type="file"
+                          className="sr-only"
+                          onChange={handleFileChange}
+                        />
                       </label>
                       <p className="pl-1">or drag and drop</p>
                     </div>
-                    <p className="text-xs leading-5 text-gray-600">PNG, JPG, GIF up to 10MB</p>
+                    <p className="text-xs leading-5 text-gray-600">
+                      PNG, JPG, GIF up to 10MB
+                    </p>
                   </div>
                 </div>
                 {formData.file && (
                   <div className="mt-4 flex items-center justify-between rounded-lg bg-gray-100 p-3">
                     <div className="flex items-center gap-3">
                       <Paperclip className="h-5 w-5 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-800">{formData.file.name}</span>
+                      <span className="text-sm font-medium text-gray-800">
+                        {formData.file.name}
+                      </span>
                     </div>
                     <Button
                       type="button"
@@ -494,8 +559,8 @@ export default function QuanLyTaiLieuPage() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => {
-                        setFormData((prev) => ({ ...prev, file: null }))
-                        setFilePreview(null)
+                        setFormData((prev) => ({ ...prev, file: null }));
+                        setFilePreview(null);
                       }}
                     >
                       <Trash className="h-4 w-4 text-red-500" />
@@ -505,10 +570,17 @@ export default function QuanLyTaiLieuPage() {
               </div>
             </div>
             <div className="flex items-center justify-end space-x-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsModalOpen(false)}
+              >
                 Hủy
               </Button>
-              <Button type="submit" className="bg-orange-500 hover:bg-orange-600">
+              <Button
+                type="submit"
+                className="bg-orange-500 hover:bg-orange-600"
+              >
                 {selectedDocument ? "Cập nhật" : "Thêm tài liệu"}
               </Button>
             </div>
@@ -517,22 +589,32 @@ export default function QuanLyTaiLieuPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa tài liệu</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa tài liệu "{selectedDocument?.documentName}"? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa tài liệu "
+              {selectedDocument?.documentName}"? Hành động này không thể hoàn
+              tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedDocument(null)}>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogCancel onClick={() => setSelectedDocument(null)}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Xóa
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </PageContainer>
-  )
+  );
 }

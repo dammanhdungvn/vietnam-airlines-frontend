@@ -9,6 +9,7 @@
 
 import {
   getPersonsPaginated,
+  getPersonsSuperAdminCreated,
   getPersonByEmail,
   deletePerson,
   importPersons,
@@ -117,6 +118,64 @@ describe("Person Service", () => {
     it("should throw an error if fetching fails", async () => {
       mockedApi.get.mockRejectedValue(new Error("API Error"));
       await expect(getPersonsPaginated()).rejects.toThrow("API Error");
+    });
+  });
+
+  describe("getPersonsSuperAdminCreated", () => {
+    /**
+     * @test Lấy danh sách persons do SUPERADMIN tạo với params mặc định
+     */
+    it("should fetch superadmin created persons successfully with default params", async () => {
+      const mockApiResponse: { data: StreamApiResponse<PaginatedApiResponse<Person>> } = {
+        data: {
+          code: 200,
+          message: "OK",
+          data: mockPaginatedResponse,
+        },
+      };
+      mockedApi.get.mockResolvedValue(mockApiResponse);
+
+      const result = await getPersonsSuperAdminCreated();
+
+      expect(mockedApi.get).toHaveBeenCalledWith("/core/persons/superadmin-created", {
+        params: {
+          page: 0,
+          size: 10,
+          sortBy: "personId",
+          sortDir: "asc",
+        },
+      });
+      expect(result).toEqual(mockPaginatedResponse);
+    });
+
+    /**
+     * @test Lấy danh sách persons do SUPERADMIN tạo với params tùy chỉnh
+     */
+    it("should fetch superadmin created persons successfully with custom params", async () => {
+      const mockApiResponse: { data: StreamApiResponse<PaginatedApiResponse<Person>> } = {
+        data: {
+          code: 200,
+          message: "OK",
+          data: { ...mockPaginatedResponse, page: 2, size: 20 },
+        },
+      };
+      mockedApi.get.mockResolvedValue(mockApiResponse);
+
+      const params = { page: 2, size: 20, sortBy: "email", sortDir: "asc" as const };
+      const result = await getPersonsSuperAdminCreated(params);
+
+      expect(mockedApi.get).toHaveBeenCalledWith("/core/persons/superadmin-created", {
+        params,
+      });
+      expect(result).toEqual({ ...mockPaginatedResponse, page: 2, size: 20 });
+    });
+
+    /**
+     * @test Xử lý lỗi khi lấy danh sách SUPERADMIN thất bại
+     */
+    it("should throw an error if fetching superadmin created persons fails", async () => {
+      mockedApi.get.mockRejectedValue(new Error("API Error"));
+      await expect(getPersonsSuperAdminCreated()).rejects.toThrow("API Error");
     });
   });
 
