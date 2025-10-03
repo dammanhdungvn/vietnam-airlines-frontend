@@ -95,6 +95,8 @@ export default function QuanLyKhachMoiLocalPage() {
   const [debouncedTerm, setDebouncedTerm] = useState("");
   const [sortBy, setSortBy] = useState("personId");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [vipFilter, setVipFilter] = useState<string>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newPersonData, setNewPersonData] = useState<AddPersonPayload>({
     email: "",
@@ -666,10 +668,28 @@ export default function QuanLyKhachMoiLocalPage() {
   }, [searchTerm]);
 
   const filteredPersons = (allPersons.length ? allPersons : persons).filter(
-    (person) =>
-      person.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.position.toLowerCase().includes(searchTerm.toLowerCase())
+    (person) => {
+      // Search filter
+      const matchesSearch =
+        person.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        person.position.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Status filter
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "registered" && person.status) ||
+        (statusFilter === "unregistered" && !person.status);
+
+      // VIP filter
+      const matchesVip =
+        vipFilter === "all" ||
+        (vipFilter === "SUPER_VIP" && person.isVip === "SUPER_VIP") ||
+        (vipFilter === "VIP" && person.isVip === "VIP") ||
+        (vipFilter === "NORMAL" && person.isVip === "NORMAL");
+
+      return matchesSearch && matchesStatus && matchesVip;
+    }
   );
 
   const clientTotalPages = Math.max(
@@ -721,6 +741,29 @@ export default function QuanLyKhachMoiLocalPage() {
             />
           </div>
           <div className="flex items-center gap-2 sm:ml-2">
+            {/* Status Filter */}
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="registered">Đăng ký</option>
+              <option value="unregistered">Chưa đăng ký</option>
+            </select>
+
+            {/* VIP Filter */}
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto"
+              value={vipFilter}
+              onChange={(e) => setVipFilter(e.target.value)}
+            >
+              <option value="all">Tất cả loại khách</option>
+              <option value="SUPER_VIP">Siêu VIP</option>
+              <option value="VIP">VIP</option>
+              <option value="NORMAL">Thường</option>
+            </select>
+
             <Button
               variant="outline"
               size="sm"
