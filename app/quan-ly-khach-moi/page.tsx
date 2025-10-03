@@ -587,24 +587,51 @@ export default function QuanLyKhachMoiPage() {
       <input ref={editAvatarInputRef} type="file" accept="image/*" onChange={handleEditAvatarChange} className="hidden" />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý khách mời</h1>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm" onClick={handleTriggerImport} disabled={isImporting}>
-            <Upload className="w-4 h-4 mr-2" />
-            {isImporting ? "Đang import..." : "Import"}
-          </Button>
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={() => setIsAddModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm mới
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Tìm kiếm theo tên, email, chức vụ..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+          <div className="flex items-center gap-2 sm:ml-2">
+            {/* <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto"
+              value={`${sortBy},${sortDir}`}
+              onChange={(e) => {
+                const [newSortBy, newSortDir] = e.target.value.split(",")
+                setSortBy(newSortBy)
+                setSortDir(newSortDir as "asc" | "desc")
+              }}
+            >
+              <option value="personId,asc">ID (Tăng dần)</option>
+              <option value="personId,desc">ID (Giảm dần)</option>
+              <option value="fullName,asc">Tên (A-Z)</option>
+              <option value="fullName,desc">Tên (Z-A)</option>
+              <option value="email,asc">Email (A-Z)</option>
+              <option value="email,desc">Email (Z-A)</option>
+            </select> */}
+            <Button variant="outline" size="sm" onClick={handleTriggerImport} disabled={isImporting} className="flex-1 sm:flex-none">
+              <Upload className="w-4 h-4 mr-2" />
+              {isImporting ? "Đang import..." : "Import"}
+            </Button>
+            <Button size="sm" className="bg-orange-500 hover:bg-orange-600 flex-1 sm:flex-none" onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm mới
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center space-x-4 mb-6">
+      {/* <div className="flex items-center space-x-4 mb-6">
         <div className="flex items-center space-x-2 ml-auto">
           <select
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
@@ -632,12 +659,12 @@ export default function QuanLyKhachMoiPage() {
             />
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="min-w-[900px] w-full table-auto">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -742,7 +769,7 @@ export default function QuanLyKhachMoiPage() {
 
         {/* Pagination (client-side) */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-gray-700 hidden sm:block">
             Hiển thị {pagination.page * pagination.size + 1} đến{" "}
             {Math.min((pagination.page + 1) * pagination.size, filteredPersons.length)} trong tổng số{" "}
             {filteredPersons.length} khách mời
@@ -783,12 +810,12 @@ export default function QuanLyKhachMoiPage() {
 
       {/* Modal form thêm khách mời */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[min(95vw,700px)] max-w-none sm:max-w-none">
           <DialogHeader>
             <DialogTitle>Thêm khách mời mới</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
             {/* Email */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Email*</label>
@@ -835,7 +862,7 @@ export default function QuanLyKhachMoiPage() {
               <label className="text-sm font-medium">Giới tính</label>
               <Select
                 value={newPersonData.gender}
-                onValueChange={(value: "MALE" | "FEMALE" | "OTHER") =>
+                onValueChange={(value: "MALE" | "FEMALE") =>
                   setNewPersonData({ ...newPersonData, gender: value })
                 }
               >
@@ -845,7 +872,6 @@ export default function QuanLyKhachMoiPage() {
                 <SelectContent>
                   <SelectItem value="MALE">Nam</SelectItem>
                   <SelectItem value="FEMALE">Nữ</SelectItem>
-                  <SelectItem value="OTHER">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -930,7 +956,7 @@ export default function QuanLyKhachMoiPage() {
 
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-[calc(48rem+3.125rem)] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-[640px] md:w-[720px] lg:w-[780px] max-w-none sm:max-w-none md:max-w-none lg:max-w-none max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa thông tin khách mời</DialogTitle>
           </DialogHeader>
@@ -982,7 +1008,7 @@ export default function QuanLyKhachMoiPage() {
               <label className="text-sm font-medium">Giới tính</label>
               <Select
                 value={editFormData.gender || ""}
-                onValueChange={(value: "MALE" | "FEMALE" | "OTHER") =>
+                onValueChange={(value: "MALE" | "FEMALE") =>
                   setEditFormData({ ...editFormData, gender: value })
                 }
               >
@@ -992,7 +1018,6 @@ export default function QuanLyKhachMoiPage() {
                 <SelectContent>
                   <SelectItem value="MALE">Nam</SelectItem>
                   <SelectItem value="FEMALE">Nữ</SelectItem>
-                  <SelectItem value="OTHER">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>

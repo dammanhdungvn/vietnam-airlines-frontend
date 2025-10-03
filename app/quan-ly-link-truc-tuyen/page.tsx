@@ -150,29 +150,21 @@ export default function QuanLyLinkTrucTuyenPage() {
   return (
     <PageContainer>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý link trực tuyến</h1>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={handleAddNew}>
+        <div className="flex items-center gap-2">
+          <Button size="sm" className="bg-orange-500 hover:bg-orange-600 flex-1 sm:flex-none" onClick={handleAddNew}>
             <Plus className="w-4 h-4 mr-2" />
             Thêm link mới
           </Button>
         </div>
       </div>
 
-      <div className="flex items-center space-x-4 mb-6">
-        <div className="flex items-center space-x-2 ml-auto">
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="streamName">Tên link</option>
-            <option value="streamUrl">URL</option>
-          </select>
-          <div className="relative">
+      <div className="mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Tìm kiếm theo tên hoặc URL"
@@ -181,7 +173,7 @@ export default function QuanLyLinkTrucTuyenPage() {
                 setSearchTerm(e.target.value)
                 setCurrentPage(1)
               }}
-              className="pl-10 w-64"
+              className="pl-10 w-full"
             />
           </div>
         </div>
@@ -189,8 +181,8 @@ export default function QuanLyLinkTrucTuyenPage() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="w-full">
-          <table className="w-full table-fixed">
+        <div className="w-full overflow-x-auto">
+          <table className="min-w-[800px] w-full table-auto">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -256,8 +248,8 @@ export default function QuanLyLinkTrucTuyenPage() {
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-center sm:justify-end w-full sm:w-auto space-x-2 ">
+          <div className="text-sm text-gray-700 hidden sm:block">
             Hiển thị {startIndex + 1} đến {Math.min(endIndex, filteredData.length)} trong tổng số {filteredData.length} link
           </div>
           <div className="flex items-center space-x-2">
@@ -299,7 +291,7 @@ export default function QuanLyLinkTrucTuyenPage() {
 
       {/* Modal Thêm/Sửa */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[95vw] sm:w-[560px] md:w-[600px] max-w-none sm:max-w-none max-h-[90vh] overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 break-words">
           <DialogHeader>
             <DialogTitle>{selectedStream ? "Sửa thông tin link" : "Thêm link mới"}</DialogTitle>
             <DialogDescription>
@@ -307,27 +299,31 @@ export default function QuanLyLinkTrucTuyenPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="streamName" className="text-right">
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+              <Label htmlFor="streamName" className="text-left sm:text-right">
                 Tên link
               </Label>
-              <Input
-                id="streamName"
-                value={formData.streamName}
-                onChange={(e) => setFormData({ ...formData, streamName: e.target.value })}
-                className="col-span-3"
-              />
+              <div className="sm:col-span-3 min-w-0">
+                <Input
+                  id="streamName"
+                  value={formData.streamName}
+                  onChange={(e) => setFormData({ ...formData, streamName: e.target.value })}
+                  className="w-full"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="streamUrl" className="text-right">
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+              <Label htmlFor="streamUrl" className="text-left sm:text-right">
                 URL
               </Label>
-              <Input
-                id="streamUrl"
-                value={formData.streamUrl}
-                onChange={(e) => setFormData({ ...formData, streamUrl: e.target.value })}
-                className="col-span-3"
-              />
+              <div className="sm:col-span-3 min-w-0">
+                <Input
+                  id="streamUrl"
+                  value={formData.streamUrl}
+                  onChange={(e) => setFormData({ ...formData, streamUrl: e.target.value })}
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

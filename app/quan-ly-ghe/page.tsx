@@ -324,7 +324,7 @@ export default function QuanLyGhePage() {
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Quản lý Ghế</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">Tổng cộng {seats.length} ghế</p>
         </div>
-        <div className="flex items-center gap-2 sm:space-x-3">
+        {/* <div className="flex items-center gap-2 sm:space-x-3">
           <Button variant="outline" size="sm" onClick={handleRefresh} className="flex-1 sm:flex-none">
             <RefreshCw className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Làm mới</span>
@@ -337,12 +337,12 @@ export default function QuanLyGhePage() {
             <Plus className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Thêm mới</span>
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Sơ đồ ghế */}
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Sơ đồ ghế</h2>
+        {/* <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Sơ đồ ghế</h2> */}
         <div className="overflow-x-auto">
           <SeatMap seats={seats} />
         </div>

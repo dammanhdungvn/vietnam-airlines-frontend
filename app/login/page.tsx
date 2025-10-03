@@ -44,7 +44,7 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors, isSubmitting }, // Lấy các trạng thái của form
   } = useForm<ILoginPayload>({
-    resolver: zodResolver(loginSchema), // Tích hợp Zod resolver
+    resolver: zodResolver(loginSchema), // Tích hợp Zod resolver    
   })
 
   /**

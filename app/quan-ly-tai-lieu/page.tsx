@@ -240,31 +240,31 @@ export default function QuanLyTaiLieuPage() {
   return (
     <PageContainer>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý tài liệu</h1>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={handleAdd}>
+          <Button size="sm" className="bg-orange-500 hover:bg-orange-600 flex-1 sm:flex-none" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-2" />
             Thêm tài liệu
           </Button>
         </div>
       </div>
 
-      <div className="flex items-center space-x-4 mb-6">
-        <div className="flex items-center space-x-2 ml-auto">
-          <div className="relative">
+      <div className="mb-4">
+        <div className="flex items-center gap-2 sm:justify-end">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Tìm kiếm theo tên hoặc tác giả"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
+              className="pl-10 w-full sm:w-64"
             />
           </div>
         </div>
@@ -272,8 +272,8 @@ export default function QuanLyTaiLieuPage() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="w-full">
-          <table className="w-full table-fixed">
+        <div className="w-full overflow-x-auto">
+          <table className="min-w-[800px] w-full table-auto">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -385,10 +385,10 @@ export default function QuanLyTaiLieuPage() {
         {/* Pagination */}
         {filteredData.length > 0 && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-gray-700 hidden sm:block">
               Hiển thị {startIndex + 1} đến {Math.min(endIndex, filteredData.length)} trong tổng số {filteredData.length} tài liệu
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center sm:justify-end w-full sm:w-auto space-x-2">
               <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentPage === 1}>
                 ← Trước
               </Button>
@@ -428,7 +428,7 @@ export default function QuanLyTaiLieuPage() {
 
       {/* Add/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[min(95vw,600px)] max-w-none sm:max-w-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">
               {selectedDocument ? "Sửa tài liệu" : "Thêm tài liệu mới"}

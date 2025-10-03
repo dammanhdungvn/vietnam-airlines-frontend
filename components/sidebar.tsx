@@ -51,16 +51,16 @@ export function Sidebar({ className = "", onNavigate }: { className?: string; on
       href: "/quan-ly-khach-moi",
       icon: Users,
     },
-    {
-      title: "Quản lý ghế",
-      href: "/quan-ly-ghe",
-      icon: Plane,
-    },
-    {
-      title: "Quản lý đồ ăn",
-      href: "/quan-ly-do-an",
-      icon: Utensils,
-    },
+    // {
+    //   title: "Quản lý ghế",
+    //   href: "/quan-ly-ghe",
+    //   icon: Plane,
+    // },
+    // {
+    //   title: "Quản lý đồ ăn",
+    //   href: "/quan-ly-do-an",
+    //   icon: Utensils,
+    // },
     {
       title: "Quản lý tài liệu",
       href: "/quan-ly-tai-lieu",
