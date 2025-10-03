@@ -1156,14 +1156,14 @@ export default function QuanLyKhachMoiPage() {
           </div>
 
           {/* Food Items Section */}
-          <div className="border-t pt-4 mt-4">
+          {/* <div className="border-t pt-4 mt-4">
             <div className="flex items-center gap-2 mb-3">
               <Utensils className="w-5 h-5 text-orange-500" />
               <h3 className="text-lg font-semibold">Món ăn & Đồ uống</h3>
-            </div>
+            </div> */}
 
             {/* Selected Items */}
-            {editFormData.items && editFormData.items.length > 0 && (
+            {/* {editFormData.items && editFormData.items.length > 0 && (
               <div className="space-y-2 mb-4">
                 {editFormData.items.map((item: any) => (
                   <div key={item.id} className="bg-gray-50 rounded-lg p-3">
@@ -1207,10 +1207,10 @@ export default function QuanLyKhachMoiPage() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Add Item Dropdown */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-sm font-medium">Thêm món</label>
               <Select
                 value=""
@@ -1228,7 +1228,7 @@ export default function QuanLyKhachMoiPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </div> */}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditModalOpen(false)} disabled={isUpdating}>

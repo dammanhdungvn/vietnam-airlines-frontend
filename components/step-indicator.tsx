@@ -19,7 +19,7 @@ interface StepIndicatorProps {
  */
 export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
   return (
-    <div className="flex items-center justify-between mb-8">
+    <div className="flex items-center justify-center gap-4 sm:gap-6 mb-8 flex-wrap">
       {steps.map((step, index) => {
         const Icon = step.icon
         const isActive = step.number === currentStep
@@ -27,7 +27,7 @@ export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
         const isConnected = index < steps.length - 1
 
         return (
-          <div key={step.number} className="flex items-center flex-1">
+          <div key={step.number} className="flex items-center">
             <div className="flex flex-col items-center">
               <div
                 className={cn(
@@ -49,7 +49,14 @@ export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
               </div>
             </div>
 
-            {isConnected && <div className={cn("flex-1 h-0.5 mx-4", isCompleted ? "bg-green-500" : "bg-gray-300")} />}
+            {isConnected && (
+              <div
+                className={cn(
+                  "h-0.5 w-8 sm:w-12 mx-3 sm:mx-4",
+                  isCompleted ? "bg-green-500" : "bg-gray-300",
+                )}
+              />
+            )}
           </div>
         )
       })}

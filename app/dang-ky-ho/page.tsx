@@ -290,7 +290,7 @@ export default function DangKyHoPage() {
     { number: 1, title: "Khách hàng", subtitle: "Chọn từ danh sách", icon: User },
     { number: 2, title: "Lấy thông tin", subtitle: "Face ID để tham gia", icon: Info },
     { number: 3, title: "Ghế ngồi", subtitle: "Chọn vị trí trong hội nghị", icon: Plane },
-    { number: 4, title: "Khu trải nghiệm", subtitle: "Đồ ăn, thức uống trong hội nghị", icon: Utensils },
+    // { number: 4, title: "Khu trải nghiệm", subtitle: "Đồ ăn, thức uống trong hội nghị", icon: Utensils },
   ]
 
   const handleNext = async () => {
@@ -641,6 +641,7 @@ export default function DangKyHoPage() {
               </div>
             </div>
 
+            {/* Face ID */}
             <Card
               className="border-2 border-dashed border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
               onClick={handleImageClick}
@@ -679,74 +680,74 @@ export default function DangKyHoPage() {
             isLoading={isLoadingSeats}
           />
         );
-      case 4:
-        return (
-          <div className="max-w-6xl mx-auto">
-            {isLoadingItems ? (
-               <div className="flex items-center justify-center h-64">
-                <div className="text-center" role="status">
-                  <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 animate-spin mx-auto mb-4 text-orange-500" />
-                  <p className="text-sm sm:text-base text-gray-600">Đang tải sản phẩm...</p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {items.map((item) => (
-                  <Card
-                    key={item.id}
-                    className="flex flex-col"
-                  >
-                    <CardContent className="p-4 flex flex-col flex-grow">
-                      <div className="flex-grow">
-                        <h3 className="font-semibold">{item.itemName}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                      </div>
-                      <div className="flex items-center justify-between mt-4">
-                        <span className="font-bold text-lg text-orange-600">{item.price.toLocaleString('vi-VN')}đ</span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateItemQuantity(item.id, -1);
-                            }}
-                            disabled={(selectedItems.get(item.id) || 0) === 0}
-                            className="w-8 h-8 p-0"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <span className="w-8 text-center font-semibold">{selectedItems.get(item.id) || 0}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateItemQuantity(item.id, 1);
-                            }}
-                            className="w-8 h-8 p-0"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-            {totalItemPrice > 0 && (
-              <div className="mt-8 pt-4 border-t-2 border-dashed">
-                <div className="flex justify-between items-center max-w-sm mx-auto">
-                  <h3 className="text-lg font-semibold">Tổng tiền sản phẩm:</h3>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {totalItemPrice.toLocaleString('vi-VN')}đ
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        )
+      // case 4:
+      //   return (
+      //     <div className="max-w-6xl mx-auto">
+      //       {isLoadingItems ? (
+      //          <div className="flex items-center justify-center h-64">
+      //           <div className="text-center" role="status">
+      //             <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 animate-spin mx-auto mb-4 text-orange-500" />
+      //             <p className="text-sm sm:text-base text-gray-600">Đang tải sản phẩm...</p>
+      //           </div>
+      //         </div>
+      //       ) : (
+      //         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+      //           {items.map((item) => (
+      //             <Card
+      //               key={item.id}
+      //               className="flex flex-col"
+      //             >
+      //               <CardContent className="p-4 flex flex-col flex-grow">
+      //                 <div className="flex-grow">
+      //                   <h3 className="font-semibold">{item.itemName}</h3>
+      //                   <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+      //                 </div>
+      //                 <div className="flex items-center justify-between mt-4">
+      //                   <span className="font-bold text-lg text-orange-600">{item.price.toLocaleString('vi-VN')}đ</span>
+      //                   <div className="flex items-center gap-2">
+      //                     <Button
+      //                       variant="outline"
+      //                       size="sm"
+      //                       onClick={(e) => {
+      //                         e.stopPropagation();
+      //                         updateItemQuantity(item.id, -1);
+      //                       }}
+      //                       disabled={(selectedItems.get(item.id) || 0) === 0}
+      //                       className="w-8 h-8 p-0"
+      //                     >
+      //                       <Minus className="w-4 h-4" />
+      //                     </Button>
+      //                     <span className="w-8 text-center font-semibold">{selectedItems.get(item.id) || 0}</span>
+      //                     <Button
+      //                       variant="outline"
+      //                       size="sm"
+      //                       onClick={(e) => {
+      //                         e.stopPropagation();
+      //                         updateItemQuantity(item.id, 1);
+      //                       }}
+      //                       className="w-8 h-8 p-0"
+      //                     >
+      //                       <Plus className="w-4 h-4" />
+      //                     </Button>
+      //                   </div>
+      //                 </div>
+      //               </CardContent>
+      //             </Card>
+      //           ))}
+      //         </div>
+      //       )}
+      //       {totalItemPrice > 0 && (
+      //         <div className="mt-8 pt-4 border-t-2 border-dashed">
+      //           <div className="flex justify-between items-center max-w-sm mx-auto">
+      //             <h3 className="text-lg font-semibold">Tổng tiền sản phẩm:</h3>
+      //             <p className="text-2xl font-bold text-orange-600">
+      //               {totalItemPrice.toLocaleString('vi-VN')}đ
+      //             </p>
+      //           </div>
+      //         </div>
+      //       )}
+      //     </div>
+      //   )
       default:
         return null
     }
@@ -781,7 +782,7 @@ export default function DangKyHoPage() {
         <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Đăng ký hộ khách tại sự kiện</p>
       </div>
 
-      {/* Chỉ báo bước */}
+      {/* thanh giai đoạn đang diễn ra */}
       <StepIndicator steps={steps} currentStep={currentStep} />
 
       {/* Nội dung bước hiện tại */}
