@@ -128,10 +128,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div className="text-sm font-medium text-gray-700 truncate px-2">
-              Vietnam Airlines
-            </div>
-            <div className="w-9" />
           </div>
         </div>
 

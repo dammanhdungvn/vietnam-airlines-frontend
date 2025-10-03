@@ -248,7 +248,7 @@ export default function QuanLyLinkTrucTuyenPage() {
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-center sm:justify-end w-full sm:w-auto space-x-2 ">
+        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-center sm:justify-between w-full space-x-2 ">
           <div className="text-sm text-gray-700 hidden sm:block">
             Hiển thị {startIndex + 1} đến {Math.min(endIndex, filteredData.length)} trong tổng số {filteredData.length} link
           </div>
