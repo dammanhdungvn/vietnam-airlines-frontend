@@ -732,7 +732,7 @@ export default function QuanLyKhachMoiPage() {
                           variant={person.status ? "default" : "secondary"}
                           className={person.status ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
                         >
-                          {person.status ? "Hoạt động" : "Không hoạt động"}
+                          {person.status ? "Đăng ký" : "Chưa đăng ký"}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -887,8 +887,8 @@ export default function QuanLyKhachMoiPage() {
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="TRUE">Hoạt động</SelectItem>
-                  <SelectItem value="FALSE">Không hoạt động</SelectItem>
+                  <SelectItem value="TRUE">Đăng ký</SelectItem>
+                  <SelectItem value="FALSE">Chưa đăng ký</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1035,8 +1035,8 @@ export default function QuanLyKhachMoiPage() {
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="TRUE">Hoạt động</SelectItem>
-                  <SelectItem value="FALSE">Không hoạt động</SelectItem>
+                  <SelectItem value="TRUE">Đăng ký</SelectItem>
+                  <SelectItem value="FALSE">Chưa đăng ký</SelectItem>
                 </SelectContent>
               </Select>
             </div>
